@@ -21,10 +21,10 @@ importers:
         specifier: ^1.18.8
         version: 1.18.8
       '@typescript-eslint/eslint-plugin':
-        specifier: ^8.45.0
+        specifier: ^8.46.2
         version: 8.46.2(@typescript-eslint/parser@8.46.2(eslint@9.39.0)(typescript@5.9.3))(eslint@9.39.0)(typescript@5.9.3)
       '@typescript-eslint/parser':
-        specifier: ^8.45.0
+        specifier: ^8.46.2
         version: 8.46.2(eslint@9.39.0)(typescript@5.9.3)
       '@vscode/test-web':
         specifier: ^0.0.74
@@ -33,7 +33,7 @@ importers:
         specifier: ^2.1.0
         version: 2.1.0
       eslint:
-        specifier: ^9.36.0
+        specifier: ^9.39.0
         version: 9.39.0
       mocha:
         specifier: ^11.7.4
@@ -48,7 +48,7 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
       webpack:
-        specifier: ^5.102.0
+        specifier: ^5.102.1
         version: 5.102.1(webpack-cli@6.0.1)
       webpack-cli:
         specifier: ^6.0.1

@@ -4,7 +4,7 @@ A PyCharm-inspired debug and run configuration manager for VS Code that provides
 
 ## Features
 
-- **🎯 Configuration View**: Clean, organized tree view of all debug configurations and compounds
+- **🎯 Configuration View**: Clean, organized tree view with type-specific icons for configurations and compounds
 - **🔄 Launch.json Sync**: Automatically synchronizes with your `.vscode/launch.json` file
 - **💡 Quick Configuration**: Create configurations instantly from active files with smart type detection
 - **➕ Guided Setup**: Add new debug configurations with step-by-step configuration
@@ -14,6 +14,7 @@ A PyCharm-inspired debug and run configuration manager for VS Code that provides
 - **📋 Duplicate Configurations**: Quickly copy existing configurations
 - **▶️ Quick Launch**: Run configurations with or without debugging
 - **🔄 Auto-refresh**: Automatically updates when launch.json changes
+- **🎨 Smart Icons**: Visual icons that match your development environment (Node.js, Python, Chrome, etc.)
 
 ## Usage
 

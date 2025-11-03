@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { LaunchConfiguration, LaunchCompound, LaunchJson, ClickBehavior } from './types';
+import { ClickBehavior, LaunchCompound, LaunchConfiguration, LaunchJson } from './types';
 
 export class DebugConfigurationItem extends vscode.TreeItem {
     constructor(
@@ -11,7 +11,7 @@ export class DebugConfigurationItem extends vscode.TreeItem {
         this.tooltip = config.name;
         this.description = this.getDescription(config);
         this.contextValue = 'configuration';
-        this.iconPath = new vscode.ThemeIcon('gear');
+        this.iconPath = this.getIconForConfig(config);
 
         // Set command based on click behavior configuration
         if (clickBehavior === 'openSettings') {
@@ -28,6 +28,70 @@ export class DebugConfigurationItem extends vscode.TreeItem {
             return `Compound (${config.configurations.length} configurations)`;
         }
         return `${config.type} - ${config.request}`;
+    }
+
+    private getIconForConfig(config: LaunchConfiguration | LaunchCompound): vscode.ThemeIcon {
+        if ('configurations' in config) {
+            // Compound configurations get a special icon
+            return new vscode.ThemeIcon('gear');
+        }
+
+        const launchConfig = config as LaunchConfiguration;
+        const type = launchConfig.type.toLowerCase();
+        console.log("type", type);
+
+        // Map configuration types to appropriate language icons
+        switch (type) {
+            case 'node':
+            case 'node2':
+                return new vscode.ThemeIcon('nodejs'); // Node.js icon
+            case 'python':
+            case 'debugpy':
+                return new vscode.ThemeIcon('python'); // Python icon
+            case 'chrome':
+            case 'msedge':
+            case 'edge':
+                return new vscode.ThemeIcon('browser'); // Browser-related icon
+            case 'firefox':
+                return new vscode.ThemeIcon('browser'); // Browser-related icon
+            case 'java':
+                return new vscode.ThemeIcon('java'); // Java icon
+            case 'cppdbg':
+            case 'cpp':
+                return new vscode.ThemeIcon('cpp'); // C++ icon
+            case 'go':
+                return new vscode.ThemeIcon('go'); // Go icon
+            case 'rust':
+                return new vscode.ThemeIcon('rust'); // Rust icon
+            case 'php':
+                return new vscode.ThemeIcon('php'); // PHP icon
+            case 'ruby':
+                return new vscode.ThemeIcon('ruby'); // Ruby icon
+            case 'coreclr':
+            case 'dotnet':
+                return new vscode.ThemeIcon('csharp'); // C#/.NET icon
+            case 'extensionhost':
+                return new vscode.ThemeIcon('extensions'); // VS Code extension icon
+            case 'powershell':
+                return new vscode.ThemeIcon('powershell'); // PowerShell icon
+            case 'mono':
+                return new vscode.ThemeIcon('csharp'); // Mono C# icon
+            case 'java+':
+                return new vscode.ThemeIcon('java'); // Java icon
+            case 'lua':
+                return new vscode.ThemeIcon('lua'); // Lua icon
+            case 'dart':
+                return new vscode.ThemeIcon('dart'); // Dart icon
+            case 'swift':
+                return new vscode.ThemeIcon('swift'); // Swift icon
+            case 'kotlin':
+                return new vscode.ThemeIcon('kotlin'); // Kotlin icon
+            case 'scala':
+                return new vscode.ThemeIcon('scala'); // Scala icon
+            default:
+                // Fallback for unknown types - use launch icon
+                return new vscode.ThemeIcon('debug-start');
+        }
     }
 }
 
