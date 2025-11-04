@@ -1,9 +1,9 @@
 {
     "name": "tingly-debug",
-    "displayName": "Tingly Run / Debug Configurations",
+    "displayName": "Tingly Debug Configurations",
     "publisher": "FFengIll",
     "description": "A debug and run configuration manager and UI for VS Code",
-    "version": "0.0.2",
+    "version": "0.0.3",
     "engines": {
         "vscode": "^1.105.0"
     },
