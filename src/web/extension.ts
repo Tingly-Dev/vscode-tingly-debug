@@ -23,16 +23,38 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Watch for changes in launch.json
     const fileSystemWatcher = vscode.workspace.createFileSystemWatcher('**/.vscode/launch.json');
-    fileSystemWatcher.onDidChange(() => provider.refresh());
-    fileSystemWatcher.onDidCreate(() => provider.refresh());
-    fileSystemWatcher.onDidDelete(() => provider.refresh());
+    fileSystemWatcher.onDidChange(async () => {
+        try {
+            await provider.refresh();
+        } catch (error) {
+            console.error('Failed to refresh on file change:', error);
+        }
+    });
+    fileSystemWatcher.onDidCreate(async () => {
+        try {
+            await provider.refresh();
+        } catch (error) {
+            console.error('Failed to refresh on file creation:', error);
+        }
+    });
+    fileSystemWatcher.onDidDelete(async () => {
+        try {
+            await provider.refresh();
+        } catch (error) {
+            console.error('Failed to refresh on file deletion:', error);
+        }
+    });
 
     context.subscriptions.push(fileSystemWatcher);
 
     // Watch for configuration changes
-    const configWatcher = vscode.workspace.onDidChangeConfiguration(e => {
+    const configWatcher = vscode.workspace.onDidChangeConfiguration(async (e) => {
         if (e.affectsConfiguration('ddd.clickBehavior')) {
-            provider.refresh();
+            try {
+                await provider.refresh();
+            } catch (error) {
+                console.error('Failed to refresh on configuration change:', error);
+            }
         }
     });
 

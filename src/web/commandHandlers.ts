@@ -129,8 +129,8 @@ export function registerCommandHandlers(
 
                     progress.report({ increment: 50, message: "Updating configuration list..." });
 
-                    // Refresh the tree view
-                    provider.refresh();
+                    // Refresh the tree view (this will handle closing open panels if needed)
+                    await provider.refresh();
 
                     progress.report({ increment: 100, message: "Complete!" });
 
@@ -145,7 +145,13 @@ export function registerCommandHandlers(
                 } catch (error) {
                     const errorMessage = error instanceof Error ? error.message : String(error);
                     console.error('Refresh error:', error);
-                    vscode.window.showErrorMessage(`Failed to refresh debug configurations: ${errorMessage}`);
+
+                    // Check if user cancelled the refresh
+                    if (errorMessage.includes('cancelled by user')) {
+                        vscode.window.showInformationMessage('Refresh cancelled by user.');
+                    } else {
+                        vscode.window.showErrorMessage(`Failed to refresh debug configurations: ${errorMessage}`);
+                    }
                 }
             });
         } catch (error) {
@@ -223,7 +229,7 @@ export function registerCommandHandlers(
 
     // Edit configuration command
     const editCommand = vscode.commands.registerCommand('ddd.debugConfig.edit', async (item: DebugConfigurationItem) => {
-        ConfigurationEditor.openConfigurationEditor(item.config, provider);
+        await ConfigurationEditor.openConfigurationEditor(item.config, provider);
     });
 
     // Delete configuration command
@@ -348,7 +354,7 @@ export function registerCommandHandlers(
                     const configItems = await provider.getConfigurations();
                     const createdItem = configItems.find(item => item.config.name === finalConfigName);
                     if (createdItem) {
-                        ConfigurationEditor.openConfigurationEditor(createdItem.config, provider);
+                        await ConfigurationEditor.openConfigurationEditor(createdItem.config, provider);
                     }
                 } catch (error) {
                     console.error('Failed to open configuration editor:', error);
@@ -361,7 +367,7 @@ export function registerCommandHandlers(
 
     // Open settings command (using configuration editor)
     const openSettingsCommand = vscode.commands.registerCommand('ddd.debugConfig.openSettings', async (item: DebugConfigurationItem) => {
-        ConfigurationEditor.openConfigurationEditor(item.config, provider);
+        await ConfigurationEditor.openConfigurationEditor(item.config, provider);
     });
 
     // Generate debug command from symbol (used for both run and debug modes)

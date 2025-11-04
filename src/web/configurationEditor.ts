@@ -6,6 +6,70 @@ export class ConfigurationEditor {
     private static openPanels = new Map<string, vscode.WebviewPanel>();
 
     /**
+     * Check if any configuration editor panel is currently open
+     */
+    static hasOpenPanel(): boolean {
+        return ConfigurationEditor.openPanels.size > 0;
+    }
+
+    /**
+     * Get the currently open panel configuration name
+     */
+    static getOpenPanelConfig(): string | null {
+        if (ConfigurationEditor.openPanels.size === 0) {
+            return null;
+        }
+        // Return the first (and only) panel's configuration name
+        const panelId = Array.from(ConfigurationEditor.openPanels.keys())[0];
+        return panelId.replace('debugConfigSettings_', '');
+    }
+
+    /**
+     * Request panel switch with confirmation
+     */
+    static async requestPanelSwitch(newConfigName: string): Promise<boolean> {
+        if (ConfigurationEditor.openPanels.size === 0) {
+            return true; // No panel open, allow switch
+        }
+
+        const panelId = Array.from(ConfigurationEditor.openPanels.keys())[0];
+        const panel = ConfigurationEditor.openPanels.get(panelId);
+
+        if (!panel) {
+            return true; // Panel not found, allow switch
+        }
+
+        // Focus the existing panel
+        panel.reveal();
+
+        // Send message to panel to handle switch confirmation
+        panel.webview.postMessage({
+            command: 'requestSwitch',
+            newConfigName: newConfigName
+        });
+
+        return false; // Don't switch immediately, wait for user response
+    }
+
+    /**
+     * Force close current panel (called after user confirms)
+     */
+    static closeCurrentPanel(): void {
+        if (ConfigurationEditor.openPanels.size === 0) {
+            return;
+        }
+
+        const panelId = Array.from(ConfigurationEditor.openPanels.keys())[0];
+        const panel = ConfigurationEditor.openPanels.get(panelId);
+
+        if (panel) {
+            panel.dispose();
+        }
+
+        ConfigurationEditor.openPanels.delete(panelId);
+    }
+
+    /**
      * Escape template literals in JavaScript contexts but preserve VS Code variables
      */
     private static escapeForJsTemplate(value: string): string {
@@ -14,10 +78,59 @@ export class ConfigurationEditor {
         return value.replace(/\${/g, '\\${}');
     }
 
-    static openConfigurationEditor(
+    /**
+     * Check if a property is typically an array type
+     */
+    private static isArrayProperty(key: string): boolean {
+        const arrayProperties = ['args', 'outFiles', 'preLaunchTask', 'postDebugTask', 'configurations', 'inputs'];
+        return arrayProperties.includes(key);
+    }
+
+    /**
+     * Convert array to JSON string for display in input field
+     */
+    private static arrayToString(value: any[]): string {
+        return JSON.stringify(value);
+    }
+
+    /**
+     * Convert JSON string to array
+     */
+    private static stringToArray(value: string): any[] {
+        if (!value || !value.trim()) return [];
+        // Try to parse as JSON array
+        try {
+            const parsed = JSON.parse(value);
+            return Array.isArray(parsed) ? parsed : [parsed];
+        } catch {
+            // If JSON parsing fails, treat as comma-separated values for backwards compatibility
+            return value.split(',').map(item => {
+                const trimmed = item.trim();
+                // Try to parse each item as JSON, if fails keep as string
+                try {
+                    return JSON.parse(trimmed);
+                } catch {
+                    return trimmed;
+                }
+            });
+        }
+    }
+
+    /**
+     * Escape HTML tags to prevent XSS
+     */
+    private static escapeHtmlTags(value: string): string {
+        return value.replace(/&/g, '&amp;')
+                   .replace(/</g, '&lt;')
+                   .replace(/>/g, '&gt;')
+                   .replace(/"/g, '&quot;')
+                   .replace(/'/g, '&#39;');
+    }
+
+    static async openConfigurationEditor(
         config: LaunchConfiguration | LaunchCompound,
         provider: DebugConfigurationProvider
-    ): void {
+    ): Promise<void> {
         // Only allow configuration settings for LaunchConfiguration, not compounds
         if ('configurations' in config) {
             vscode.window.showWarningMessage('Configuration settings are not available for compound configurations');
@@ -27,13 +140,22 @@ export class ConfigurationEditor {
         const launchConfig = config as LaunchConfiguration;
         const panelId = `debugConfigSettings_${launchConfig.name}`;
 
-        // Check if panel for this configuration already exists
-        if (ConfigurationEditor.openPanels.has(panelId)) {
-            const existingPanel = ConfigurationEditor.openPanels.get(panelId);
-            if (existingPanel) {
-                // Focus existing panel instead of creating a new one
-                existingPanel.reveal();
-                return;
+        // Check if any panel is already open
+        if (ConfigurationEditor.hasOpenPanel()) {
+            const openConfigName = ConfigurationEditor.getOpenPanelConfig();
+            if (openConfigName === launchConfig.name) {
+                // Same configuration is already open, just focus it
+                const existingPanel = ConfigurationEditor.openPanels.get(panelId);
+                if (existingPanel) {
+                    existingPanel.reveal();
+                    return;
+                }
+            } else {
+                // Different configuration is open, request panel switch
+                const canSwitch = await ConfigurationEditor.requestPanelSwitch(launchConfig.name);
+                if (!canSwitch) {
+                    return; // Switch request is being handled by the panel
+                }
             }
         }
 
@@ -79,6 +201,51 @@ export class ConfigurationEditor {
         panel.webview.onDidReceiveMessage(
             async (message) => {
                 switch (message.command) {
+                    case 'confirmSwitch':
+                        // User confirmed the switch action
+                        if (message.action === 'discard') {
+                            // Close current panel and allow switch
+                            ConfigurationEditor.closeCurrentPanel();
+                            // Re-open with new configuration
+                            await ConfigurationEditor.openConfigurationEditor(
+                                { name: message.newConfigName, type: '', request: 'launch' } as LaunchConfiguration,
+                                provider
+                            );
+                        } else if (message.action === 'switch') {
+                            // Direct switch (no unsaved changes)
+                            ConfigurationEditor.closeCurrentPanel();
+                            // Re-open with new configuration
+                            await ConfigurationEditor.openConfigurationEditor(
+                                { name: message.newConfigName, type: '', request: 'launch' } as LaunchConfiguration,
+                                provider
+                            );
+                        }
+                        break;
+                    case 'performSwitch':
+                        // Perform the actual switch
+                        ConfigurationEditor.closeCurrentPanel();
+                        // Re-open with new configuration
+                        await ConfigurationEditor.openConfigurationEditor(
+                            { name: message.newConfigName, type: '', request: 'launch' } as LaunchConfiguration,
+                            provider
+                        );
+                        break;
+                    case 'saveAndSwitch':
+                        try {
+                            // Save current configuration first
+                            await provider.updateConfiguration(launchConfig.name, message.config);
+                            vscode.window.showInformationMessage(`Configuration "${launchConfig.name}" updated successfully!`);
+
+                            // Close current panel and switch to new one
+                            ConfigurationEditor.closeCurrentPanel();
+                            await ConfigurationEditor.openConfigurationEditor(
+                                { name: message.newConfigName, type: '', request: 'launch' } as LaunchConfiguration,
+                                provider
+                            );
+                        } catch (error) {
+                            vscode.window.showErrorMessage(`Failed to save configuration: ${error}`);
+                        }
+                        break;
                     case 'browseEnvFile':
                         try {
                             await this.handleEnvFileBrowse(message.currentPath, panel, provider);
@@ -329,12 +496,57 @@ API_URL=http://localhost:3000
 
         const propertiesHtml = Object.entries(otherProperties)
             .map(([key, value]) => {
-                const displayValue = typeof value === 'string' ? value : JSON.stringify(value);
+                const isArray = this.isArrayProperty(key);
+                let displayValue;
+                let inputHtml;
+
+                if (isArray) {
+                    displayValue = Array.isArray(value) ? this.arrayToString(value) : '';
+                    inputHtml = `
+                        <div class="array-input-container" id="array-container-${key}">
+                            <div class="array-input-mode">
+                                <div class="array-mode-buttons">
+                                    <button type="button" class="array-mode-btn ${!displayValue.includes('\n') ? 'active' : ''}"
+                                            onclick="setArrayMode('${key}', 'single')" title="Single line input">
+                                        <span class="codicon codicon-symbol-string"></span>
+                                    </button>
+                                    <button type="button" class="array-mode-btn ${displayValue.includes('\n') ? 'active' : ''}"
+                                            onclick="setArrayMode('${key}', 'list')" title="List input">
+                                        <span class="codicon codicon-list-flat"></span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="array-input-content">
+                                <input type="text" id="prop-${key}" name="${key}"
+                                       value="${displayValue.replace(/"/g, '&quot;')}"
+                                       placeholder="Enter JSON array for ${key} (e.g., [\\"value1\\", \\"value2\\"])"
+                                       class="array-single-input"
+                                       oninput="updateJsonPreview()">
+                                <textarea id="prop-${key}-list" name="${key}-list"
+                                          placeholder="Enter one value per line for ${key}"
+                                          class="array-list-input"
+                                          style="display: none;"
+                                          oninput="updateJsonPreviewFromList('${key}')">${this.escapeHtmlTags(Array.isArray(value) ? value.join('\n') : '')}</textarea>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    displayValue = typeof value === 'string' ? value : JSON.stringify(value);
+                    inputHtml = `
+                        <input type="text" id="prop-${key}" name="${key}"
+                               value="${displayValue.replace(/"/g, '&quot;')}"
+                               placeholder="Enter ${key}"
+                               oninput="updateJsonPreview()">
+                    `;
+                }
+
                 return `
-                    <div class="field-group">
-                        <label for="prop-${key}">${key}</label>
-                        <input type="text" id="prop-${key}" name="${key}" value="${displayValue.replace(/"/g, '&quot;')}" placeholder="Enter ${key}">
-                        <button type="button" class="remove-btn" onclick="removeField('${key}')">🗑️</button>
+                    <div class="field-group ${isArray ? 'array-field' : ''}">
+                        <label for="prop-${key}">${key} ${isArray ? '<span class="array-badge">Array</span>' : ''}</label>
+                        <div class="field-content">
+                            ${inputHtml}
+                            <button type="button" class="remove-btn" onclick="removeField('${key}')">🗑️</button>
+                        </div>
                     </div>
                 `;
             })
@@ -612,6 +824,81 @@ API_URL=http://localhost:3000
             font-size: var(--vscode-font-size);
             display: none;
         }
+        .array-field {
+            align-items: flex-start;
+        }
+        .array-badge {
+            font-size: 10px;
+            background-color: var(--vscode-badge-background);
+            color: var(--vscode-badge-foreground);
+            padding: 2px 6px;
+            border-radius: 3px;
+            margin-left: 8px;
+            font-weight: normal;
+        }
+        .field-content {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex: 1;
+        }
+        .array-input-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex: 1;
+        }
+        .array-input-mode {
+            display: flex;
+            justify-content: flex-end;
+        }
+        .array-mode-buttons {
+            display: flex;
+            border: 1px solid var(--vscode-button-border);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .array-mode-btn {
+            background-color: var(--vscode-button-secondaryBackground);
+            color: var(--vscode-button-secondaryForeground);
+            border: none;
+            padding: 4px 8px;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            transition: background-color 0.2s;
+        }
+        .array-mode-btn:hover {
+            background-color: var(--vscode-button-hoverBackground);
+        }
+        .array-mode-btn.active {
+            background-color: var(--vscode-button-background);
+            color: var(--vscode-button-foreground);
+        }
+        .array-input-content {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .array-list-input {
+            min-height: 80px;
+            resize: vertical;
+            border: 1px solid var(--vscode-input-border);
+            background-color: var(--vscode-input-background);
+            color: var(--vscode-input-foreground);
+            font-family: var(--vscode-font-family);
+            font-size: var(--vscode-font-size);
+            padding: 6px 8px;
+            border-radius: 3px;
+        }
+        .array-list-input:focus {
+            outline: 1px solid var(--vscode-focusBorder);
+            outline-offset: -1px;
+        }
+        .array-single-input {
+            width: 100%;
+        }
     </style>
 </head>
 <body>
@@ -747,6 +1034,216 @@ API_URL=http://localhost:3000
 
             console.log('All required DOM elements are present');
             return true;
+        }
+
+        // Array input handling functions
+        function setArrayMode(propertyName, mode) {
+            const singleInput = document.getElementById(\`prop-\${propertyName}\`);
+            const listInput = document.getElementById(\`prop-\${propertyName}-list\`);
+            const singleBtn = document.querySelector(\`#array-container-\${propertyName} .array-mode-btn:first-child\`);
+            const listBtn = document.querySelector(\`#array-container-\${propertyName} .array-mode-btn:last-child\`);
+
+            if (mode === 'single') {
+                // Switch to single line mode
+                if (listInput && singleInput) {
+                    // Convert list to JSON array string
+                    const listValue = listInput.value.trim();
+                    if (listValue) {
+                        const arrayValue = listValue.split('\\n').filter(line => line.trim()).map(line => line.trim());
+                        singleInput.value = JSON.stringify(arrayValue);
+                    } else {
+                        singleInput.value = '[]';
+                    }
+                }
+
+                if (singleInput) singleInput.style.display = 'block';
+                if (listInput) listInput.style.display = 'none';
+                if (singleBtn) singleBtn.classList.add('active');
+                if (listBtn) listBtn.classList.remove('active');
+            } else if (mode === 'list') {
+                // Switch to list mode
+                if (singleInput && listInput) {
+                    // Convert JSON array string to list
+                    const singleValue = singleInput.value.trim();
+                    if (singleValue) {
+                        try {
+                            const arrayValue = JSON.parse(singleValue);
+                            if (Array.isArray(arrayValue)) {
+                                listInput.value = arrayValue.map(item => String(item)).join('\\n');
+                            } else {
+                                listInput.value = String(arrayValue);
+                            }
+                        } catch {
+                            // If JSON parsing fails, treat as comma-separated for backwards compatibility
+                            const arrayValue = singleValue.split(',').map(item => item.trim()).filter(item => item);
+                            listInput.value = arrayValue.join('\\n');
+                        }
+                    }
+                }
+
+                if (singleInput) singleInput.style.display = 'none';
+                if (listInput) listInput.style.display = 'block';
+                if (singleBtn) singleBtn.classList.remove('active');
+                if (listBtn) listBtn.classList.add('active');
+            }
+
+            updateJsonPreview();
+        }
+
+        function updateJsonPreviewFromList(propertyName) {
+            // Update the corresponding single input field
+            const listInput = document.getElementById(\`prop-\${propertyName}-list\`);
+            const singleInput = document.getElementById(\`prop-\${propertyName}\`);
+
+            if (listInput && singleInput) {
+                const listValue = listInput.value.trim();
+                if (listValue) {
+                    const arrayValue = listValue.split('\\n').filter(line => line.trim()).map(line => line.trim());
+                    singleInput.value = JSON.stringify(arrayValue);
+                } else {
+                    singleInput.value = '[]';
+                }
+            }
+
+            updateJsonPreview();
+        }
+
+        function handlePanelSwitchRequest(newConfigName) {
+            if (!isDirty) {
+                // No unsaved changes, directly switch
+                vscode.postMessage({
+                    command: 'confirmSwitch',
+                    action: 'switch',
+                    newConfigName: newConfigName
+                });
+            } else {
+                // There are unsaved changes, show confirmation dialog
+                const currentConfigName = document.getElementById('configName').value;
+
+                // Create confirmation dialog
+                const shouldShowDialog = () => {
+                    const modal = document.createElement('div');
+                    modal.style.cssText = \`
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        width: 100%;
+                        height: 100%;
+                        background-color: rgba(0, 0, 0, 0.5);
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        z-index: 10000;
+                    \`;
+
+                    const dialog = document.createElement('div');
+                    dialog.style.cssText = \`
+                        background-color: var(--vscode-editor-background);
+                        border: 1px solid var(--vscode-panel-border);
+                        border-radius: 6px;
+                        padding: 20px;
+                        min-width: 400px;
+                        max-width: 600px;
+                        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+                    \`;
+
+                    dialog.innerHTML = \`
+                        <h3 style="margin: 0 0 15px 0; color: var(--vscode-foreground);">
+                            Switch Configuration?
+                        </h3>
+                        <p style="margin: 0 0 20px 0; color: var(--vscode-foreground);">
+                            You have unsaved changes to "\${currentConfigName}". What would you like to do with these changes?
+                        </p>
+                        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                            <button type="button" id="btn-cancel" style="
+                                padding: 8px 16px;
+                                border: 1px solid var(--vscode-button-border);
+                                background-color: var(--vscode-button-secondaryBackground);
+                                color: var(--vscode-button-secondaryForeground);
+                                border-radius: 3px;
+                                cursor: pointer;
+                            ">Cancel</button>
+                            <button type="button" id="btn-discard" style="
+                                padding: 8px 16px;
+                                border: 1px solid var(--vscode-button-border);
+                                background-color: var(--vscode-button-secondaryBackground);
+                                color: var(--vscode-button-secondaryForeground);
+                                border-radius: 3px;
+                                cursor: pointer;
+                            ">Discard Changes</button>
+                            <button type="button" id="btn-save" style="
+                                padding: 8px 16px;
+                                border: 1px solid var(--vscode-button-border);
+                                background-color: var(--vscode-button-background);
+                                color: var(--vscode-button-foreground);
+                                border-radius: 3px;
+                                cursor: pointer;
+                            ">Save & Switch</button>
+                        </div>
+                    \`;
+
+                    modal.appendChild(dialog);
+                    document.body.appendChild(modal);
+
+                    // Add event listeners
+                    document.getElementById('btn-cancel').addEventListener('click', () => {
+                        document.body.removeChild(modal);
+                        vscode.postMessage({
+                            command: 'confirmSwitch',
+                            action: 'cancel',
+                            newConfigName: newConfigName
+                        });
+                    });
+
+                    document.getElementById('btn-discard').addEventListener('click', () => {
+                        document.body.removeChild(modal);
+                        vscode.postMessage({
+                            command: 'confirmSwitch',
+                            action: 'discard',
+                            newConfigName: newConfigName
+                        });
+                    });
+
+                    document.getElementById('btn-save').addEventListener('click', () => {
+                        document.body.removeChild(modal);
+                        // Save current configuration first
+                        const currentConfig = getCurrentFormConfig();
+                        vscode.postMessage({
+                            command: 'saveAndSwitch',
+                            config: currentConfig,
+                            newConfigName: newConfigName
+                        });
+                    });
+
+                    // Close on outside click
+                    modal.addEventListener('click', (e) => {
+                        if (e.target === modal) {
+                            document.body.removeChild(modal);
+                            vscode.postMessage({
+                                command: 'confirmSwitch',
+                                action: 'cancel',
+                                newConfigName: newConfigName
+                            });
+                        }
+                    });
+
+                    // Close on Escape key
+                    const handleEscape = (e) => {
+                        if (e.key === 'Escape') {
+                            document.body.removeChild(modal);
+                            document.removeEventListener('keydown', handleEscape);
+                            vscode.postMessage({
+                                command: 'confirmSwitch',
+                                action: 'cancel',
+                                newConfigName: newConfigName
+                            });
+                        }
+                    };
+                    document.addEventListener('keydown', handleEscape);
+                };
+
+                shouldShowDialog();
+            }
         }
 
         function updateTypeFromSelect() {
@@ -887,12 +1384,38 @@ API_URL=http://localhost:3000
 
                 // Add basic properties from form (name, type, request)
                 for (let [key, value] of formData.entries()) {
-                    if (key && !key.startsWith('env-')) {
-                        // Try to parse as JSON, otherwise keep as string
-                        try {
-                            config[key] = JSON.parse(value);
-                        } catch {
-                            config[key] = value;
+                    if (key && !key.startsWith('env-') && !key.endsWith('-list')) {
+                        // Check if this is an array property
+                        const isArrayField = ['args', 'outFiles', 'preLaunchTask', 'postDebugTask', 'configurations', 'inputs'].includes(key);
+
+                        if (isArrayField) {
+                            // Parse as JSON array
+                            if (value && value.trim()) {
+                                try {
+                                    const parsed = JSON.parse(value);
+                                    config[key] = Array.isArray(parsed) ? parsed : [parsed];
+                                } catch {
+                                    // If JSON parsing fails, treat as comma-separated for backwards compatibility
+                                    config[key] = value.split(',').map(item => {
+                                        const trimmed = item.trim();
+                                        // Try to parse as JSON, if fails keep as string
+                                        try {
+                                            return JSON.parse(trimmed);
+                                        } catch {
+                                            return trimmed;
+                                        }
+                                    });
+                                }
+                            } else {
+                                config[key] = [];
+                            }
+                        } else {
+                            // Try to parse as JSON, otherwise keep as string
+                            try {
+                                config[key] = JSON.parse(value);
+                            } catch {
+                                config[key] = value;
+                            }
                         }
                     }
                 }
@@ -1168,6 +1691,18 @@ API_URL=http://localhost:3000
                     break;
                 case 'showEnvFileError':
                     showError(message.message);
+                    break;
+                case 'requestSwitch':
+                    handlePanelSwitchRequest(message.newConfigName);
+                    break;
+                case 'confirmSwitch':
+                    // Handle user's response to switch confirmation
+                    if (message.action === 'switch') {
+                        vscode.postMessage({
+                            command: 'performSwitch',
+                            newConfigName: message.newConfigName
+                        });
+                    }
                     break;
             }
         });
