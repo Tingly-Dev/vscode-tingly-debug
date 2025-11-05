@@ -18,146 +18,146 @@
     "contributes": {
         "commands": [
             {
-                "command": "ddd.helloWorld",
-                "title": "ddd: Hello World"
+                "command": "tingly.debug.helloWorld",
+                "title": "Tingly: Hello World"
             },
             {
-                "command": "ddd.debugConfig.refresh",
-                "title": "ddd: Refresh",
+                "command": "tingly.debug.debugConfig.refresh",
+                "title": "Tingly: Refresh",
                 "icon": "$(refresh)"
             },
             {
-                "command": "ddd.debugConfig.add",
-                "title": "ddd: Add Configuration",
+                "command": "tingly.debug.debugConfig.add",
+                "title": "Tingly: Add Configuration",
                 "icon": "$(add)"
             },
             {
-                "command": "ddd.debugConfig.edit",
-                "title": "ddd: Edit Configuration",
+                "command": "tingly.debug.debugConfig.edit",
+                "title": "Tingly: Edit Configuration",
                 "icon": "$(edit)"
             },
             {
-                "command": "ddd.debugConfig.delete",
-                "title": "ddd: Delete Configuration",
+                "command": "tingly.debug.debugConfig.delete",
+                "title": "Tingly: Delete Configuration",
                 "icon": "$(trash)"
             },
             {
-                "command": "ddd.debugConfig.duplicate",
-                "title": "ddd: Duplicate Configuration",
+                "command": "tingly.debug.debugConfig.duplicate",
+                "title": "Tingly: Duplicate Configuration",
                 "icon": "$(copy)"
             },
             {
-                "command": "ddd.debugConfig.run",
-                "title": "ddd: Run Configuration",
+                "command": "tingly.debug.debugConfig.run",
+                "title": "Tingly: Run Configuration",
                 "icon": "$(play)"
             },
             {
-                "command": "ddd.debugConfig.debug",
-                "title": "ddd: Debug Configuration",
+                "command": "tingly.debug.debugConfig.debug",
+                "title": "Tingly: Debug Configuration",
                 "icon": "$(debug)"
             },
             {
-                "command": "ddd.debugConfig.createFromFile",
-                "title": "ddd: Quick Configuration from Active File",
+                "command": "tingly.debug.debugConfig.createFromFile",
+                "title": "Tingly: Debug from Active File",
                 "icon": "$(lightbulb)"
             },
             {
-                "command": "ddd.debugConfig.openSettings",
-                "title": "ddd: Configuration Settings",
+                "command": "tingly.debug.debugConfig.openSettings",
+                "title": "Tingly: Configuration Settings",
                 "icon": "$(gear)"
             },
             {
-                "command": "ddd.generateDebugCommand",
-                "title": "ddd: Generate Debug Command from Symbol",
+                "command": "tingly.debug.generateDebugCommand",
+                "title": "Tingly: Debug from Symbol",
                 "icon": "$(debug)"
             },
             {
-                "command": "ddd.generateDebugConfigFromDirectory",
-                "title": "ddd: Generate Debug Configuration from Directory",
+                "command": "tingly.debug.generateDebugConfigFromDirectory",
+                "title": "Tingly: Debug from Directory",
                 "icon": "$(debug)"
             }
         ],
         "views": {
             "debug": [
                 {
-                    "id": "ddd.debugConfigurations",
-                    "name": "ddd Configurations"
+                    "id": "tingly.debug.debugConfigurations",
+                    "name": "tingly.debug Configurations"
                 }
             ]
         },
         "menus": {
             "view/title": [
                 {
-                    "command": "ddd.debugConfig.add",
-                    "when": "view == ddd.debugConfigurations",
+                    "command": "tingly.debug.debugConfig.add",
+                    "when": "view == tingly.debug.debugConfigurations",
                     "group": "navigation"
                 },
                 {
-                    "command": "ddd.debugConfig.createFromFile",
-                    "when": "view == ddd.debugConfigurations",
+                    "command": "tingly.debug.debugConfig.createFromFile",
+                    "when": "view == tingly.debug.debugConfigurations",
                     "group": "navigation"
                 },
                 {
-                    "command": "ddd.debugConfig.refresh",
-                    "when": "view == ddd.debugConfigurations",
+                    "command": "tingly.debug.debugConfig.refresh",
+                    "when": "view == tingly.debug.debugConfigurations",
                     "group": "navigation"
                 }
             ],
             "editor/title": [
                 {
-                    "command": "ddd.debugConfig.createFromFile",
+                    "command": "tingly.debug.debugConfig.createFromFile",
                     "when": "resourceExtname =~ /\\.(js|ts|tsx|jsx|mjs|cjs|py|java|cpp|c|go|rs|php|rb|cs|html|htm|dart|ps1|sh|bash|zsh|fish|lua|ex|exs|kt|kts|scala|sc)$/",
                     "group": "navigation"
                 },
                 {
-                    "command": "ddd.generateDebugCommand",
+                    "command": "tingly.debug.generateDebugCommand",
                     "when": "resourceExtname =~ /\\.(js|ts|tsx|jsx|mjs|cjs|py|java|cpp|c|go|rs|php|rb|cs|html|htm|dart|ps1|sh|bash|zsh|fish|lua|ex|exs|kt|kts|scala|sc)$/",
                     "group": "1_symbol@1"
                 }
             ],
             "editor/context": [
                 {
-                    "command": "ddd.generateDebugCommand",
+                    "command": "tingly.debug.generateDebugCommand",
                     "when": "resourceExtname =~ /\\.(js|ts|tsx|jsx|mjs|cjs|py|java|cpp|c|go|rs|php|rb|cs|html|htm|dart|ps1|sh|bash|zsh|fish|lua|ex|exs|kt|kts|scala|sc)$/",
-                    "group": "ddd@1"
+                    "group": "tingly.debug@1"
                 }
             ],
             "explorer/context": [
                 {
-                    "command": "ddd.generateDebugConfigFromDirectory",
+                    "command": "tingly.debug.generateDebugConfigFromDirectory",
                     "when": "explorerResourceIsFolder",
-                    "group": "ddd@1"
+                    "group": "tingly.debug@1"
                 }
             ],
             "view/item/context": [
                 {
-                    "command": "ddd.debugConfig.run",
-                    "when": "view == ddd.debugConfigurations && viewItem == configuration",
+                    "command": "tingly.debug.debugConfig.run",
+                    "when": "view == tingly.debug.debugConfigurations && viewItem == configuration",
                     "group": "inline@1"
                 },
                 {
-                    "command": "ddd.debugConfig.debug",
-                    "when": "view == ddd.debugConfigurations && viewItem == configuration",
+                    "command": "tingly.debug.debugConfig.debug",
+                    "when": "view == tingly.debug.debugConfigurations && viewItem == configuration",
                     "group": "inline@2"
                 },
                 {
-                    "command": "ddd.debugConfig.openSettings",
-                    "when": "view == ddd.debugConfigurations && viewItem == configuration",
+                    "command": "tingly.debug.debugConfig.openSettings",
+                    "when": "view == tingly.debug.debugConfigurations && viewItem == configuration",
                     "group": "inline@3"
                 },
                 {
-                    "command": "ddd.debugConfig.edit",
-                    "when": "view == ddd.debugConfigurations && viewItem == configuration",
+                    "command": "tingly.debug.debugConfig.edit",
+                    "when": "view == tingly.debug.debugConfigurations && viewItem == configuration",
                     "group": "1_modification"
                 },
                 {
-                    "command": "ddd.debugConfig.duplicate",
-                    "when": "view == ddd.debugConfigurations && viewItem == configuration",
+                    "command": "tingly.debug.debugConfig.duplicate",
+                    "when": "view == tingly.debug.debugConfigurations && viewItem == configuration",
                     "group": "1_modification"
                 },
                 {
-                    "command": "ddd.debugConfig.delete",
-                    "when": "view == ddd.debugConfigurations && viewItem == configuration",
+                    "command": "tingly.debug.debugConfig.delete",
+                    "when": "view == tingly.debug.debugConfigurations && viewItem == configuration",
                     "group": "1_modification"
                 }
             ]
@@ -166,7 +166,7 @@
     "configuration": {
         "title": "Debug Configurations",
         "properties": {
-            "ddd.clickBehavior": {
+            "tingly.debug.clickBehavior": {
                 "type": "string",
                 "enum": [
                     "openSettings",
@@ -179,7 +179,7 @@
                     "No action when clicking an item (use toolbar buttons instead)"
                 ]
             },
-            "ddd.nameCollisionSuffixStyle": {
+            "tingly.debug.nameCollisionSuffixStyle": {
                 "type": "string",
                 "enum": [
                     "index",
