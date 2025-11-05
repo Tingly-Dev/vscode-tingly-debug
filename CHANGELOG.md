@@ -4,6 +4,24 @@ All notable changes to the "ddd" extension will be documented in this file.
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [0.0.5] - 2025-11-05
+
+### Added
+- ✅ Single unified page for switching between different debug configurations
+- ✅ Improved webview data initialization for better configuration page management
+
+### Changed
+- ✅ Better project structure with code separation into config/, core/, util/, and views/ directories
+- ✅ Extracted long HTML template for improved maintainability
+- ✅ Made configuration page unique to avoid UI inconsistencies
+- ✅ Enhanced code organization and modularity
+
+### Refactored
+- ✅ Separated configuration generation and debug command generation logic
+- ✅ Improved command handlers structure
+- ✅ Better type definitions and organization
+
+
 
 ## [0.0.2] - 2025-11-04
 

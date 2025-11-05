@@ -3,7 +3,7 @@
     "displayName": "Tingly Debug Configurations",
     "publisher": "FFengIll",
     "description": "A debug and run configuration manager and UI for VS Code",
-    "version": "0.0.4",
+    "version": "0.0.5",
     "engines": {
         "vscode": "^1.90.0"
     },
@@ -66,7 +66,6 @@
                 "title": "ddd: Configuration Settings",
                 "icon": "$(gear)"
             },
-
             {
                 "command": "ddd.generateDebugCommand",
                 "title": "ddd: Generate Debug Command from Symbol",
@@ -195,16 +194,16 @@
     "devDependencies": {
         "@types/assert": "^1.5.11",
         "@types/mocha": "^10.0.10",
-        "@types/vscode": "^1.90.0",
+        "@types/vscode": "^1.105.0",
         "@types/webpack-env": "^1.18.8",
-        "@typescript-eslint/eslint-plugin": "^8.46.2",
-        "@typescript-eslint/parser": "^8.46.2",
+        "@typescript-eslint/eslint-plugin": "^8.46.3",
+        "@typescript-eslint/parser": "^8.46.3",
         "@vscode/test-cli": "^0.0.12",
         "@vscode/test-electron": "^2.5.2",
         "@vscode/test-web": "^0.0.74",
         "assert": "^2.1.0",
-        "eslint": "^9.39.0",
-        "mocha": "^11.7.4",
+        "eslint": "^9.39.1",
+        "mocha": "^11.7.5",
         "process": "^0.11.10",
         "ts-loader": "^9.5.4",
         "typescript": "^5.9.3",
@@ -213,6 +212,7 @@
     },
     "dependencies": {
         "@types/strip-json-comments": "^0.0.30",
+        "fs": "0.0.1-security",
         "strip-json-comments": "^5.0.3"
     }
 }
