@@ -422,7 +422,7 @@
                 <div class="file-input-group">
                     <label for="envFile" style="flex: 0 0 auto; min-width: 80px;">Env File:</label>
                     <input type="text" id="envFile" name="envFile" placeholder="${workspaceFolder}/.env">
-                    <button type="button" onclick="browseEnvFile()">Browse</button>
+                    <button type="button" onclick="openEnvFile()">Open</button>
                 </div>
             </div>
 
@@ -441,14 +441,14 @@
                 </div>
             </div>
 
-            <div class="section">
+            <div class="section" style="border-top: 1px solid var(--vscode-panel-border); padding-top: 20px; margin-top: 20px;">
                 <div class="section-title">JSON Preview</div>
                 <div id="jsonPreview" class="json-view"></div>
             </div>
 
             <div class="button-group">
-                <button type="button" class="secondary" onclick="cancel()">Cancel</button>
-                <button type="button" class="primary" onclick="saveConfiguration()">Save</button>
+                <button type="button" class="secondary" onclick="reset()">Reset</button>
+                <button type="button" class="primary" onclick="saveConfiguration()">Update</button>
             </div>
         </form>
     </div>
@@ -812,7 +812,7 @@
             }
         }
 
-        function browseEnvFile() {
+        function openEnvFile() {
             const currentValue = document.getElementById('envFile').value;
             vscode.postMessage({
                 command: 'browseEnvFile',
@@ -1008,16 +1008,49 @@
             });
         }
 
-        function cancel() {
+        function reset() {
             if (isDirty) {
-                const result = confirm('You have unsaved changes. Are you sure you want to close without saving?');
+                const result = confirm('Are you sure you want to reset all changes?');
                 if (!result) {
                     return;
                 }
             }
-            vscode.postMessage({
-                command: 'cancel'
-            });
+
+            // Reset the form to initial configuration
+            const data = JSON.parse(initialConfig);
+            document.getElementById('configName').value = data.name || '';
+            document.getElementById('configType').value = data.type || '';
+            document.getElementById('configRequest').value = data.request || '';
+
+            // Reset type dropdown
+            if (data.type && commonTypes.includes(data.type)) {
+                document.getElementById('configTypeSelect').value = data.type;
+            } else {
+                document.getElementById('configTypeSelect').value = '';
+            }
+
+            // Reset request dropdown
+            if (['launch', 'attach'].includes(data.request)) {
+                document.getElementById('configRequestSelect').value = data.request;
+            } else {
+                document.getElementById('configRequestSelect').value = '';
+            }
+
+            // Reset environment variables
+            populateEnvironmentVariables(data.env || {});
+
+            // Reset env file
+            document.getElementById('envFile').value = data.envFile || '';
+
+            // Reset properties
+            populateProperties(data.properties || {});
+
+            // Clear dirty flag
+            isDirty = false;
+            document.title = document.title.replace(/^[●]\s*/, '');
+
+            hideError();
+            updateJsonPreview();
         }
 
         function runConfiguration() {
@@ -1060,6 +1093,14 @@
                     break;
                 case 'showEnvFileError':
                     showError(message.message);
+                    break;
+                case 'saveSuccess':
+                    // Update initial configuration after successful save
+                    initialConfig = JSON.stringify(message.config, null, 2);
+                    isDirty = false;
+                    document.title = document.title.replace(/^[●]\s*/, '');
+                    hideError();
+                    updateJsonPreview();
                     break;
                 case 'refreshUI':
                     setTimeout(() => {

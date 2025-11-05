@@ -241,7 +241,7 @@ export class ConfigurationEditor {
 
                             await vscode.debug.startDebugging(undefined, configToRun);
                             vscode.window.showInformationMessage(`Configuration "${configToRun.name}" is now running (breakpoints disabled)!`);
-                            panel.dispose();
+                            // panel.dispose(); // Keep panel open after running
                         } catch (error) {
                             panel.webview.postMessage({
                                 command: 'showError',
@@ -265,7 +265,7 @@ export class ConfigurationEditor {
 
                             await vscode.debug.startDebugging(undefined, configToDebug);
                             vscode.window.showInformationMessage(`Configuration "${configToDebug.name}" is now debugging (breakpoints enabled)!`);
-                            panel.dispose();
+                            // panel.dispose(); // Keep panel open after debugging
                         } catch (error) {
                             panel.webview.postMessage({
                                 command: 'showError',
@@ -299,7 +299,14 @@ export class ConfigurationEditor {
 
                             await provider.updateConfiguration(launchConfig.name, updatedConfig);
                             vscode.window.showInformationMessage(`Configuration "${newName}" updated successfully!`);
-                            panel.dispose();
+
+                            // Send success message to update UI state
+                            panel.webview.postMessage({
+                                command: 'saveSuccess',
+                                config: updatedConfig
+                            });
+
+                            // panel.dispose(); // Keep panel open after update
                         } catch (error) {
                             vscode.window.showErrorMessage(`Failed to update configuration: ${error}`);
                         }
