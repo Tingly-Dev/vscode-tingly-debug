@@ -43,13 +43,61 @@ export class SymbolDetector {
         const selectedText = document.getText(selection).trim();
 
         // Get document symbols
-        const symbols = await vscode.commands.executeCommand<vscode.DocumentSymbol[]>(
-            'vscode.executeDocumentSymbolProvider',
-            document.uri
-        );
+        let symbols: vscode.DocumentSymbol[] | undefined;
+        try {
+            symbols = await vscode.commands.executeCommand<vscode.DocumentSymbol[]>(
+                'vscode.executeDocumentSymbolProvider',
+                document.uri
+            );
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            const errorStack = error instanceof Error ? error.stack : undefined;
+            const documentInfo = {
+                uri: document.uri.toString(),
+                fsPath: document.uri.fsPath,
+                scheme: document.uri.scheme,
+                language: document.languageId,
+            };
 
-        if (!symbols) {
-            vscode.window.showInformationMessage(`No symbols found in this document ${document.uri}. Make sure the file has valid functions, classes, or methods.`);
+            // Enhanced logging for developers
+            console.error('=== Symbol Provider Error Details ===');
+            console.error('Error:', errorMessage);
+            console.error('Stack:', errorStack);
+            console.error('Document Info:', JSON.stringify(documentInfo, null, 2));
+            console.error('VSCode Version:', vscode.version);
+            console.error('Platform:', process.platform);
+            console.error('=====================================');
+
+            // Show user-friendly message with option to view details
+            const showDetails = 'Show Details';
+            const result = await vscode.window.showErrorMessage(
+                `Failed to analyze symbols for document: ${document.uri}`,
+                showDetails
+            );
+
+            if (result === showDetails) {
+                // Show detailed error information in output channel
+                const outputChannel = vscode.window.createOutputChannel('Tingly Debug Errors');
+                outputChannel.appendLine('=== Symbol Provider Error Details ===');
+                outputChannel.appendLine(`Timestamp: ${new Date().toISOString()}`);
+                outputChannel.appendLine(`Error: ${errorMessage}`);
+                if (errorStack) {
+                    outputChannel.appendLine(`Stack Trace:\n${errorStack}`);
+                }
+                outputChannel.appendLine(`Document URI: ${documentInfo.uri}`);
+                outputChannel.appendLine(`Document Path: ${documentInfo.fsPath}`);
+                outputChannel.appendLine(`Language: ${documentInfo.language}`);
+                outputChannel.appendLine(`Platform: ${process.platform}`);
+                outputChannel.appendLine(`VSCode Version: ${vscode.version}`);
+                outputChannel.appendLine('=====================================');
+                outputChannel.show();
+            }
+
+            return null;
+        }
+
+        if (!symbols || symbols.length === 0) {
+            vscode.window.showInformationMessage(`No symbols found in this document ${document.uri}. Make sure the file has valid functions, classes, or methods and appropriate language extensions are installed.`);
             console.log('Debug Command Generator: No symbols found in document:', document.uri.fsPath);
             return null;
         }
@@ -92,14 +140,15 @@ export class SymbolDetector {
             }
         }
 
+        // Get workspace info early for error handling
+        const workspaceFolders = vscode.workspace.workspaceFolders;
+        const workspaceRoot = workspaceFolders?.[0]?.uri.fsPath || '';
+
         if (symbolPath.length === 0) {
             vscode.window.showWarningMessage(`Unable to identify a valid test function or method to debug. Please select a test function, class, or method name.`);
             console.log('Debug Command Generator: No symbol path found for selection:', selectedText || 'word at cursor');
             return null;
         }
-
-        const workspaceFolders = vscode.workspace.workspaceFolders;
-        const workspaceRoot = workspaceFolders?.[0]?.uri.fsPath || '';
 
         return {
             name: symbolName,
