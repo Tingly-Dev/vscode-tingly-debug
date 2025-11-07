@@ -8,7 +8,7 @@
         "vscode": "^1.90.0"
     },
     "repository": {
-        "url": "https://github.com/FFengIll/tingly-debug"
+        "url": "https://github.com/FFengIll/vscode-tingly-debug"
     },
     "categories": [
         "Visualization",
