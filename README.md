@@ -1,6 +1,8 @@
-# Tingly Run / Debug Configurations
+# Tingly Debug (Run) Configurations
 
 A JetBrains-inspired debug and run configuration manager for Visual Studio Code with intuitive UI and seamless launch.json synchronization.
+
+> Status: Work-In-Process.
 
 ## 📸 Preview
 
