@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { ConfigurationData, LaunchCompound, LaunchConfiguration } from '../core/types';
-import { DebugConfigurationProvider } from './debugPanel';
 import htmlTemplate from './configurationEditor.html';
+import { DebugConfigurationProvider } from './debugPanel';
 
 export class ConfigurationEditor {
     private static openPanels = new Map<string, vscode.WebviewPanel>();
@@ -133,7 +133,7 @@ export class ConfigurationEditor {
         }
     }
 
-    
+
     static async openConfigurationEditor(
         config: LaunchConfiguration | LaunchCompound,
         provider: DebugConfigurationProvider
@@ -503,7 +503,7 @@ API_URL=http://localhost:3000
         return htmlTemplate;
     }
 
-    
+
     // Helper methods moved to HTML template (only keeping utility methods in TypeScript)
     private static escapeForJsTemplate(str: string): string {
         return str.replace(/`/g, '\\`').replace(/\${/g, '\\${');

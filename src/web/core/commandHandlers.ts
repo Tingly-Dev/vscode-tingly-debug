@@ -3,7 +3,7 @@ import { ConfigurationGenerator, ConfigurationTarget } from '../config/configura
 import { CommandGenerator, SymbolDetector, SymbolInfo } from '../config/debugCommandGenerator';
 import { FileTypeMapper } from '../util/fileTypeMapper';
 import { ConfigurationEditor } from '../views/configurationEditor';
-import { DebugConfigurationItem, DebugConfigurationProvider, DebugErrorItem, ErrorConfiguration } from '../views/debugPanel';
+import { DebugConfigurationItem, DebugConfigurationProvider, DebugErrorItem } from '../views/debugPanel';
 import { LaunchConfiguration } from './types';
 
 export function registerCommandHandlers(
@@ -73,30 +73,30 @@ export function registerCommandHandlers(
         }
     }
 
-/**
- * Type guard to check if an item is a DebugConfigurationItem
- */
-function isDebugConfigurationItem(item: any): item is DebugConfigurationItem {
-    return item && 'config' in item && 'type' in item.config && item.config.type !== 'error';
-}
+    /**
+     * Type guard to check if an item is a DebugConfigurationItem
+     */
+    function isDebugConfigurationItem(item: any): item is DebugConfigurationItem {
+        return item && 'config' in item && 'type' in item.config && item.config.type !== 'error';
+    }
 
-/**
- * Type guard to check if an item is a DebugErrorItem
- */
-function isDebugErrorItem(item: any): item is DebugErrorItem {
-    return item && 'config' in item && item.config.type === 'error';
-}
+    /**
+     * Type guard to check if an item is a DebugErrorItem
+     */
+    function isDebugErrorItem(item: any): item is DebugErrorItem {
+        return item && 'config' in item && item.config.type === 'error';
+    }
 
-/**
- * Check if the configurations contain only an error item
- */
-function hasConfigurationError(configs: any[]): configs is [DebugErrorItem] {
-    return configs.length === 1 && configs[0] && isDebugErrorItem(configs[0]);
-}
+    /**
+     * Check if the configurations contain only an error item
+     */
+    function hasConfigurationError(configs: any[]): configs is [DebugErrorItem] {
+        return configs.length === 1 && configs[0] && isDebugErrorItem(configs[0]);
+    }
 
-/**
- * Generate a unique configuration name by adding suffix based on user preference
- */
+    /**
+     * Generate a unique configuration name by adding suffix based on user preference
+     */
     async function generateUniqueConfigurationName(baseName: string, debugProvider: DebugConfigurationProvider): Promise<string | null> {
         const config = vscode.workspace.getConfiguration('ddd');
         const suffixStyle = config.get<string>('nameCollisionSuffixStyle', 'index');
@@ -637,7 +637,7 @@ function hasConfigurationError(configs: any[]): configs is [DebugErrorItem] {
         await handleGenerateDirectoryDebugConfig(uri, provider);
     });
 
-    
+
     // Hello world command
     const helloWorldCommand = vscode.commands.registerCommand('tingly.debug.helloWorld', () => {
         vscode.window.showInformationMessage('Hello World from Debug and Run Configurations extension!');
