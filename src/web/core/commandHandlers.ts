@@ -699,7 +699,6 @@ async function showSymbolSelector(): Promise<SymbolInfo | null> {
         console.error('Stack:', errorStack);
         console.error('Document Info:', JSON.stringify(documentInfo, null, 2));
         console.error('VSCode Version:', vscode.version);
-        console.error('Platform:', process.platform);
         console.error('=======================================');
 
         // Show user-friendly message with option to view details
@@ -722,7 +721,6 @@ async function showSymbolSelector(): Promise<SymbolInfo | null> {
             outputChannel.appendLine(`Document Path: ${documentInfo.fsPath}`);
             outputChannel.appendLine(`Language: ${documentInfo.language}`);
             outputChannel.appendLine(`Workspace Root: ${documentInfo.workspace}`);
-            outputChannel.appendLine(`Platform: ${process.platform}`);
             outputChannel.appendLine(`VSCode Version: ${vscode.version}`);
             outputChannel.appendLine('=======================================');
             outputChannel.show();
