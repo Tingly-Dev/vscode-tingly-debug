@@ -56,6 +56,9 @@ A JetBrains-inspired debug and run configuration manager for Visual Studio Code 
 - VS Code 1.90.0 or higher
 - Web extension compatible
 
+# Ref
+- https://github.com/wraith13/vscode-schemas
+
 ---
 
 **Transform your VS Code debugging experience with Tingly! 🚀**
