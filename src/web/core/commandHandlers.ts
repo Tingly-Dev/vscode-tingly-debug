@@ -576,6 +576,7 @@ export function registerCommandHandlers(
 
         const currentFile = editor.document.uri.fsPath;
         const language = editor.document.languageId;
+        const fileName = currentFile.split(/[\/\\]/).pop() || 'current-file';
 
         const workspaceFolders = vscode.workspace.workspaceFolders;
         if (!workspaceFolders || workspaceFolders.length === 0) {
@@ -596,9 +597,46 @@ export function registerCommandHandlers(
             return;
         }
 
+        // Check if there's a symbol at cursor position
+        let cursorSymbol: SymbolInfo | null = null;
+        try {
+            cursorSymbol = await SymbolDetector.getSelectedSymbolPath();
+        } catch (error) {
+            console.log('Symbol detection failed:', error);
+        }
+
+        // Show options for debug from file vs debug from symbol
+        const options = [
+            {
+                label: '$(file) Debug from File',
+                description: `Create debug configuration for the entire file "${fileName}"`,
+                value: 'file'
+            }
+        ];
+
+        // Only show symbol option if there's a symbol at cursor
+        if (cursorSymbol) {
+            options.unshift({
+                label: '$(symbol-misc) Debug from Symbol (on Cursor)',
+                description: `Create debug configuration for "${cursorSymbol.name}" at cursor position`,
+                value: 'symbol'
+            });
+        }
+
+        const selectedOption = await vscode.window.showQuickPick(options, {
+            placeHolder: 'Choose debug configuration scope',
+            title: `Debug Configuration for ${fileName}`
+        });
+
+        if (!selectedOption) {
+            return; // User cancelled
+        }
+
         // Generate unique configuration name
-        const fileName = currentFile.split(/[\/\\]/).pop() || 'current-file';
-        const baseConfigName = fileName.replace(/\.[^.]*$/, '');
+        const baseConfigName = selectedOption.value === 'symbol'
+            ? cursorSymbol!.name
+            : fileName.replace(/\.[^.]*$/, '');
+
         let configurations: LaunchConfiguration[] = [];
         let finalConfigName = baseConfigName;
         let counter = 1;
@@ -616,35 +654,21 @@ export function registerCommandHandlers(
             counter++;
         }
 
-        // Create enhanced configuration using language module with framework detection
+        // Create symbol info based on user selection
         let symbolInfo: SymbolInfo;
 
-        try {
-            // Try to get the actual symbol at cursor position for better framework detection
-            const detectedSymbol = await SymbolDetector.getSelectedSymbolPath();
-            if (detectedSymbol) {
-                symbolInfo = detectedSymbol;
-            } else {
-                // Fallback to file-level symbol
-                symbolInfo = {
-                    name: baseConfigName,
-                    filePath: currentFile,
-                    language: language,
-                    workspaceRoot: workspaceRoot,
-                    path: [baseConfigName],
-                    kind: vscode.SymbolKind.File  // Treat the file as a symbol
-                };
-            }
-        } catch (error) {
-            console.log('Symbol detection failed, using file-level info:', error);
-            // Fallback to file-level symbol
+        if (selectedOption.value === 'symbol' && cursorSymbol) {
+            // Use the detected symbol at cursor
+            symbolInfo = cursorSymbol;
+        } else {
+            // Use file-level symbol
             symbolInfo = {
                 name: baseConfigName,
                 filePath: currentFile,
                 language: language,
                 workspaceRoot: workspaceRoot,
                 path: [baseConfigName],
-                kind: vscode.SymbolKind.File
+                kind: vscode.SymbolKind.File  // Treat the file as a symbol
             };
         }
 
@@ -662,8 +686,13 @@ export function registerCommandHandlers(
 
         try {
             await provider.addConfiguration(newConfig);
+
+            const scopeDescription = selectedOption.value === 'symbol'
+                ? `symbol "${symbolInfo.name}"`
+                : `${module.displayName} file`;
+
             vscode.window.showInformationMessage(
-                `Debug configuration "${finalConfigName}" created for ${module.displayName} file!`
+                `Debug configuration "${finalConfigName}" created for ${scopeDescription}!`
             );
 
             // Open the configuration editor for the newly created configuration
