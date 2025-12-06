@@ -4,6 +4,27 @@ All notable changes to the "Tingly Debug" extension will be documented in this f
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [0.25.120620] - 2025-12-06
+
+### Added
+- ✅ Choice between debugging from file or debugging from symbol
+- ✅ Save button in debug configuration panel
+- ✅ Launch.json file check and automatic creation support
+- ✅ Enhanced language support separation for debug configurations
+
+### Changed
+- ✅ Improved debug configuration panel with original key names display
+- ✅ Reorganized config field ordering and grouping for better UX
+- ✅ Updated debug icons and debug-from-file logic
+- ✅ Migrated build system from pnpm to npm
+
+### Fixed
+- ✅ Golang template error by preventing environment variable setting
+- ✅ Property type processing errors
+- ✅ Missing workspace detection when starting debugging
+- ✅ Configuration field type errors
+
+
 ## [0.1.0] - 2025-11-05
 
 ### Changed
