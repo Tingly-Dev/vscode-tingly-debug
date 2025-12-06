@@ -1,6 +1,7 @@
 // Symbol detection and command generation system
 
 import * as vscode from 'vscode';
+import { languageRegistry } from '../modules/registry';
 
 export interface SymbolInfo {
     name: string;
@@ -395,13 +396,44 @@ export class CommandGenerator {
     /**
      * Generate debug configuration for a symbol (used for both run and debug)
      * The configuration generation is the same for both run and debug modes
+     * Now uses the new language module system
      */
     static async generateDebugCommand(symbol: SymbolInfo): Promise<CommandTemplate | null> {
-        const framework = await FrameworkDetector.detectFramework(symbol);
-        if (!framework) {
-            return this.generateDefaultDebugCommand(symbol);
+        try {
+            // Use new language module system
+            const debugConfig = await languageRegistry.generateDebugConfig(symbol);
+
+            // Convert LanguageDebugConfig to CommandTemplate for backward compatibility
+            return this.convertToCommandTemplate(debugConfig);
+        } catch (error) {
+            console.warn('Language module system failed, falling back to legacy system:', error);
+            // Fallback to legacy system
+            const framework = await FrameworkDetector.detectFramework(symbol);
+            if (!framework) {
+                return this.generateDefaultDebugCommand(symbol);
+            }
+            return framework.commands.debug(symbol);
         }
-        return framework.commands.debug(symbol);
+    }
+
+    /**
+     * Convert LanguageDebugConfig to CommandTemplate for backward compatibility
+     */
+    private static convertToCommandTemplate(debugConfig: any): CommandTemplate {
+        const template: CommandTemplate = {
+            command: debugConfig.program || debugConfig.runtimeExecutable || debugConfig.module || 'echo',
+            args: debugConfig.args || [],
+            cwd: debugConfig.cwd || '${workspaceFolder}',
+            env: debugConfig.env
+        };
+
+        // Handle special cases
+        if (debugConfig.module) {
+            template.command = debugConfig.module === 'pytest' ? 'pytest' : 'python';
+            template.args = ['-m', debugConfig.module, ...(debugConfig.args || [])];
+        }
+
+        return template;
     }
 
     /**
@@ -467,61 +499,70 @@ export class CommandGenerator {
 
     /**
      * Create VS Code debug configuration from command template
+     * Now uses the new language module system when possible
      */
-    static createDebugConfiguration(command: CommandTemplate, symbol: SymbolInfo): any {
-        const baseConfig: any = {
-            name: `${symbol.name}`,
-            type: this.getDebugType(symbol.language),
-            request: 'launch',
-            cwd: command.cwd || "${workspaceFolder}"
-        };
+    static async createDebugConfiguration(command: CommandTemplate, symbol: SymbolInfo): Promise<any> {
+        try {
+            // Try to use new language module system first
+            return await languageRegistry.generateDebugConfig(symbol);
+        } catch (error) {
+            console.warn('Language module system failed for debug config, falling back to legacy system:', error);
 
-        switch (symbol.language) {
-            case 'python':
-                if (command.command === 'pytest') {
-                    baseConfig.module = 'pytest';
-                    baseConfig.name = `pytest for ${baseConfig.name}`;
-                } else {
-                    baseConfig.module = undefined;
-                }
-                baseConfig.args = command.args;
-                baseConfig.justMyCode = true;
-                baseConfig.console = 'integratedTerminal';
-                break;
-            case 'javascript':
-            case 'typescript':
-                baseConfig.program = command.command === 'node' && command.args?.[0] ?
-                    `\${workspaceFolder}/${command.args[0]}` : command.command;
-                baseConfig.args = command.args?.slice(1) || [];
-                baseConfig.console = 'integratedTerminal';
-                break;
-            case 'java':
-                baseConfig.mainClass = command.args?.[0];
-                baseConfig.projectName = "${workspaceFolder}".split(/[\/\\]/).pop();
-                break;
-            case 'go':
-                baseConfig.module = "${workspaceFolder}";
-                baseConfig.args = command.args;
-                baseConfig.showLog = true;
-                break;
-            case 'cpp':
-            case 'rust':
-                baseConfig.program = command.args?.[0] || './build/app';
-                baseConfig.args = command.args?.slice(1) || [];
-                baseConfig.externalConsole = false;
-                baseConfig.MIMode = 'gdb';
-                break;
+            // Fallback to legacy system
+            const baseConfig: any = {
+                name: `${symbol.name}`,
+                type: this.getDebugType(symbol.language),
+                request: 'launch',
+                cwd: command.cwd || "${workspaceFolder}"
+            };
+
+            switch (symbol.language) {
+                case 'python':
+                    if (command.command === 'pytest') {
+                        baseConfig.module = 'pytest';
+                        baseConfig.name = `pytest for ${baseConfig.name}`;
+                    } else {
+                        baseConfig.module = undefined;
+                    }
+                    baseConfig.args = command.args;
+                    baseConfig.justMyCode = true;
+                    baseConfig.console = 'integratedTerminal';
+                    break;
+                case 'javascript':
+                case 'typescript':
+                    baseConfig.program = command.command === 'node' && command.args?.[0] ?
+                        `\${workspaceFolder}/${command.args[0]}` : command.command;
+                    baseConfig.args = command.args?.slice(1) || [];
+                    baseConfig.console = 'integratedTerminal';
+                    break;
+                case 'java':
+                    baseConfig.mainClass = command.args?.[0];
+                    baseConfig.projectName = "${workspaceFolder}".split(/[\/\\]/).pop();
+                    break;
+                case 'go':
+                    baseConfig.module = "${workspaceFolder}";
+                    baseConfig.args = command.args;
+                    baseConfig.showLog = true;
+                    break;
+                case 'cpp':
+                case 'rust':
+                    baseConfig.program = command.args?.[0] || './build/app';
+                    baseConfig.args = command.args?.slice(1) || [];
+                    baseConfig.externalConsole = false;
+                    baseConfig.MIMode = 'gdb';
+                    break;
+            }
+
+            if (command.env) {
+                baseConfig.env = command.env;
+            }
+
+            if (command.preLaunchTask) {
+                baseConfig.preLaunchTask = command.preLaunchTask;
+            }
+
+            return baseConfig;
         }
-
-        if (command.env) {
-            baseConfig.env = command.env;
-        }
-
-        if (command.preLaunchTask) {
-            baseConfig.preLaunchTask = command.preLaunchTask;
-        }
-
-        return baseConfig;
     }
 
     private static getDebugType(language: string): string {
