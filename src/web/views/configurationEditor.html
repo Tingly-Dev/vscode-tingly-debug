@@ -637,183 +637,192 @@
                     </div>
                 </div>
                 <div class="field-group-with-help">
-                    <label for="configConsole">
-                        Console
+                    <label for="configProgram">
+                        Program
                         <span
                             class="help-icon"
-                            onclick="toggleHelp(event, 'console')"
+                            onclick="toggleHelp(event, 'program')"
                         >ⓘ
                             <div
                                 class="help-popup"
-                                id="help-console"
-                            >What kind of console to use for the debug session. Options: internalConsole (VSCode debug
-                                console), integratedTerminal (VSCode terminal), or externalTerminal (system terminal).
+                                id="help-program"
+                            >The executable or script to run when launching the debugger. This can be an absolute path
+                            or use variables like ${workspaceFolder}, ${file}, etc.</div>
+                        </span>
+                    </label>
+                    <div style="flex: 1;">
+                        <div class="hybrid-input">
+                            <input
+                                type="text"
+                                id="configProgram"
+                                name="program"
+                                placeholder="Enter program path..."
+                            >
+                            <button
+                                type="button"
+                                onclick="browseProgram()"
+                                style="padding: 6px 12px; border: 1px solid var(--vscode-button-border); background-color: var(--vscode-button-secondaryBackground); color: var(--vscode-button-secondaryForeground); cursor: pointer; border-radius: 3px; font-family: var(--vscode-font-family); font-size: var(--vscode-font-size);"
+                            >Browse</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="field-group-with-help">
+                    <label for="configMode">
+                        Mode
+                        <span
+                            class="help-icon"
+                            onclick="toggleHelp(event, 'mode')"
+                        >ⓘ
+                            <div
+                                class="help-popup"
+                                id="help-mode"
+                            >The debug mode. Some debuggers support different modes like 'debug' vs 'release' or
+                            language-specific modes. Check your debugger documentation for available options.</div>
+                        </span>
+                    </label>
+                    <div style="flex: 1;">
+                        <input
+                            type="text"
+                            id="configMode"
+                            name="mode"
+                            placeholder="Enter debug mode..."
+                        >
+                    </div>
+                </div>
+                <div class="field-group-with-help">
+                    <label for="configArgs">
+                        Arguments
+                        <span
+                            class="help-icon"
+                            onclick="toggleHelp(event, 'args')"
+                        >ⓘ
+                            <div
+                                class="help-popup"
+                                id="help-args"
+                            >Command line arguments passed to the program. You can enter as a JSON array or use variables like ${file}, ${workspaceFolder}, etc.</div>
+                        </span>
+                    </label>
+                    <div style="flex: 1;">
+                        <div class="array-input-container" id="array-container-args">
+                            <div class="array-input-mode">
+                                <div class="array-mode-buttons">
+                                    <button type="button" class="array-mode-btn active" onclick="setArrayMode('args', 'single')" title="Single line input">
+                                        <span class="codicon codicon-symbol-string"></span>
+                                    </button>
+                                    <button type="button" class="array-mode-btn" onclick="setArrayMode('args', 'list')" title="List input">
+                                        <span class="codicon codicon-list-flat"></span>
+                                    </button>
+                                </div>
                             </div>
-                        </span>
-                    </label>
-                    <div style="flex: 1;">
-                        <div class="hybrid-input">
-                            <input
-                                type="text"
-                                id="configConsole"
-                                name="console"
-                                placeholder="Enter console type..."
-                                oninput="clearConsoleSelect()"
-                            >
-                            <div class="or-divider">or</div>
-                            <select
-                                id="configConsoleSelect"
-                                onchange="updateConsoleFromSelect()"
-                                class="enhanced-select"
-                            >
-                                <option value="">Select preset...</option>
-                                <option value="internalConsole">📟 Internal Console - VSCode debug console</option>
-                                <option value="integratedTerminal">💻 Integrated Terminal - VSCode terminal</option>
-                                <option value="externalTerminal">🖥️ External Terminal - System terminal</option>
-                            </select>
+                            <div class="array-input-content">
+                                <input type="text" id="configArgs" name="args" placeholder='Enter JSON array for arguments (e.g., ["arg1", "arg2"])' class="array-single-input" oninput="updateJsonPreview()">
+                                <textarea id="configArgs-list" name="args-list" placeholder="Enter one argument per line" class="array-list-input" style="display: none;" oninput="updateJsonPreviewFromList('args')"></textarea>
+                            </div>
                         </div>
                     </div>
                 </div>
                 <div class="field-group-with-help">
-                    <label for="configInternalConsole">
-                        Internal Console
+                    <label for="configModule">
+                        Module
                         <span
                             class="help-icon"
-                            onclick="toggleHelp(event, 'internalConsole')"
+                            onclick="toggleHelp(event, 'module')"
                         >ⓘ
                             <div
                                 class="help-popup"
-                                id="help-internalConsole"
-                            >Controls the visibility of the Debug console panel during a debugging session. Options:
-                                neverOpen, openOnSessionStart, or openOnFirstSessionStart.</div>
+                                id="help-module"
+                            >Module path or name to debug. Used by some debuggers to specify which module to load and debug.</div>
+                        </span>
+                    </label>
+                    <div style="flex: 1;">
+                        <input
+                            type="text"
+                            id="configModule"
+                            name="module"
+                            placeholder="Enter module path or name..."
+                        >
+                    </div>
+                </div>
+                <div class="field-group-with-help">
+                    <label for="configCwd">
+                        Working Directory
+                        <span
+                            class="help-icon"
+                            onclick="toggleHelp(event, 'cwd')"
+                        >ⓘ
+                            <div
+                                class="help-popup"
+                                id="help-cwd"
+                            >The working directory for the debug session. Defaults to the workspace folder. Can use variables like ${workspaceFolder}.</div>
                         </span>
                     </label>
                     <div style="flex: 1;">
                         <div class="hybrid-input">
                             <input
                                 type="text"
-                                id="configInternalConsole"
-                                name="internalConsoleOptions"
-                                placeholder="Enter internal console option..."
-                                oninput="clearInternalConsoleSelect()"
+                                id="configCwd"
+                                name="cwd"
+                                placeholder="Enter working directory path..."
                             >
-                            <div class="or-divider">or</div>
-                            <select
-                                id="configInternalConsoleSelect"
-                                onchange="updateInternalConsoleFromSelect()"
-                                class="enhanced-select"
-                            >
-                                <option value="">Select preset...</option>
-                                <option value="neverOpen">❌ Never Open - Don't open debug console</option>
-                                <option value="openOnSessionStart">🔄 Open on Start - Open when debugging starts
-                                </option>
-                                <option value="openOnFirstSessionStart">🔔 Open on First Start - Open for first debug
-                                    session</option>
-                            </select>
+                            <button
+                                type="button"
+                                onclick="browseCwd()"
+                                style="padding: 6px 12px; border: 1px solid var(--vscode-button-border); background-color: var(--vscode-button-secondaryBackground); color: var(--vscode-button-secondaryForeground); cursor: pointer; border-radius: 3px; font-family: var(--vscode-font-family); font-size: var(--vscode-font-size);"
+                            >Browse</button>
                         </div>
                     </div>
                 </div>
                 <div class="field-group-with-help">
-                    <label for="configPreLaunchTask">
-                        Pre-Launch Task
+                    <label for="configJustMyCode">
+                        Just My Code
                         <span
                             class="help-icon"
-                            onclick="toggleHelp(event, 'preLaunchTask')"
+                            onclick="toggleHelp(event, 'justMyCode')"
                         >ⓘ
                             <div
                                 class="help-popup"
-                                id="help-preLaunchTask"
-                            >Task to run before the start of a debug session. Set to the label of a task specified in
-                                tasks.json or use ${defaultBuildTask} for your default build task.</div>
+                                id="help-justMyCode"
+                            >Only debug user-written code and skip through system/library code. When enabled, the debugger will only stop in user code.</div>
                         </span>
                     </label>
                     <div style="flex: 1;">
                         <div class="hybrid-input">
                             <input
                                 type="text"
-                                id="configPreLaunchTask"
-                                name="preLaunchTask"
-                                placeholder="Enter task name or ${defaultBuildTask}..."
-                                oninput="clearPreLaunchTaskSelect()"
+                                id="configJustMyCode"
+                                name="justMyCode"
+                                placeholder="Enter true or false..."
+                                oninput="clearJustMyCodeSelect()"
                             >
                             <div class="or-divider">or</div>
                             <select
-                                id="configPreLaunchTaskSelect"
-                                onchange="updatePreLaunchTaskFromSelect()"
+                                id="configJustMyCodeSelect"
+                                onchange="updateJustMyCodeFromSelect()"
                                 class="enhanced-select"
                             >
                                 <option value="">Select preset...</option>
-                                <option value="${defaultBuildTask}">🔨 Default Build Task</option>
-                                <option value="npm: build">📦 NPM: Build</option>
-                                <option value="npm: compile">📝 NPM: Compile</option>
-                                <option value="npm: test">🧪 NPM: Test</option>
-                                <option value="gradle: build">🐘 Gradle: Build</option>
-                                <option value="cargo: build">🦀 Cargo: Build</option>
-                                <option value="make: all">⚙️ Make: All</option>
+                                <option value="true">✅ Enabled - Only debug user code</option>
+                                <option value="false">❌ Disabled - Debug all code</option>
                             </select>
                         </div>
                     </div>
                 </div>
-                <div class="field-group-with-help">
-                    <label for="configPostDebugTask">
-                        Post-Debug Task
-                        <span
-                            class="help-icon"
-                            onclick="toggleHelp(event, 'postDebugTask')"
-                        >ⓘ
-                            <div
-                                class="help-popup"
-                                id="help-postDebugTask"
-                            >Task to run at the very end of a debug session. Set to the label of a task specified in
-                                tasks.json for cleanup or post-processing.</div>
-                        </span>
-                    </label>
-                    <div style="flex: 1;">
-                        <div class="hybrid-input">
-                            <input
-                                type="text"
-                                id="configPostDebugTask"
-                                name="postDebugTask"
-                                placeholder="Enter task name..."
-                                oninput="clearPostDebugTaskSelect()"
-                            >
-                            <div class="or-divider">or</div>
-                            <select
-                                id="configPostDebugTaskSelect"
-                                onchange="updatePostDebugTaskFromSelect()"
-                                class="enhanced-select"
-                            >
-                                <option value="">Select preset...</option>
-                                <option value="npm: clean">🧹 NPM: Clean</option>
-                                <option value="npm: lint">🔍 NPM: Lint</option>
-                                <option value="npm: coverage">📊 NPM: Coverage</option>
-                                <option value="docker: stop">🐳 Docker: Stop</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-                <div
-                    id="errorMessage"
-                    class="error-message"
-                ></div>
             </div>
 
             <div class="section">
-                <div class="section-title">
-                    Environment Variables
-                    <span
-                        class="help-icon"
-                        onclick="toggleHelp(event, 'environment')"
-                        style="margin-left: 10px;"
-                    >ⓘ
-                        <div
-                            class="help-popup"
-                            id="help-environment"
-                        >Environment variables for the debug session. You can set key-value pairs or use envFile to load
-                            variables from a .env file. These variables are available to your program during debugging.
-                        </div>
-                    </span>
-                </div>
+                <div class="section-title">Environment Variables</div>
+                <span
+                    class="help-icon"
+                    onclick="toggleHelp(event, 'environment')"
+                    style="margin-left: 10px;"
+                >ⓘ
+                    <div
+                        class="help-popup"
+                        id="help-environment"
+                    >Environment variables for the debug session. You can set key-value pairs or use envFile to load
+                    variables from a .env file. These variables are available to your program during debugging.
+                    </div>
+                </span>
 
                 <div style="margin-bottom: 15px;">
                     <table
@@ -863,6 +872,172 @@
                 </div>
             </div>
 
+            <div class="section">
+                <div class="section-title">Session Configuration</div>
+                    <div class="field-group-with-help">
+                        <label for="configConsole">
+                            Console
+                            <span
+                                class="help-icon"
+                                onclick="toggleHelp(event, 'console')"
+                            >ⓘ
+                                <div
+                                    class="help-popup"
+                                    id="help-console"
+                                >What kind of console to use for the debug session. Options: internalConsole (VSCode debug
+                                console), integratedTerminal (VSCode terminal), or externalTerminal (system terminal).
+                                </div>
+                            </span>
+                        </label>
+                        <div style="flex: 1;">
+                            <div class="hybrid-input">
+                                <input
+                                    type="text"
+                                    id="configConsole"
+                                    name="console"
+                                    placeholder="Enter console type..."
+                                    oninput="clearConsoleSelect()"
+                                >
+                                <div class="or-divider">or</div>
+                                <select
+                                    id="configConsoleSelect"
+                                    onchange="updateConsoleFromSelect()"
+                                    class="enhanced-select"
+                                >
+                                    <option value="">Select preset...</option>
+                                    <option value="internalConsole">📟 Internal Console - VSCode debug console</option>
+                                    <option value="integratedTerminal">💻 Integrated Terminal - VSCode terminal</option>
+                                    <option value="externalTerminal">🖥️ External Terminal - System terminal</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="field-group-with-help">
+                        <label for="configInternalConsole">
+                            Internal Console
+                            <span
+                                class="help-icon"
+                                onclick="toggleHelp(event, 'internalConsole')"
+                            >ⓘ
+                                <div
+                                    class="help-popup"
+                                    id="help-internalConsole"
+                                >Controls the visibility of the Debug console panel during a debugging session. Options:
+                                    neverOpen, openOnSessionStart, or openOnFirstSessionStart.</div>
+                            </span>
+                        </label>
+                        <div style="flex: 1;">
+                            <div class="hybrid-input">
+                                <input
+                                    type="text"
+                                    id="configInternalConsole"
+                                    name="internalConsoleOptions"
+                                    placeholder="Enter internal console option..."
+                                    oninput="clearInternalConsoleSelect()"
+                                >
+                                <div class="or-divider">or</div>
+                                <select
+                                    id="configInternalConsoleSelect"
+                                    onchange="updateInternalConsoleFromSelect()"
+                                    class="enhanced-select"
+                                >
+                                    <option value="">Select preset...</option>
+                                    <option value="neverOpen">❌ Never Open - Don't open debug console</option>
+                                    <option value="openOnSessionStart">🔄 Open on Start - Open when debugging starts
+                                    </option>
+                                    <option value="openOnFirstSessionStart">🔔 Open on First Start - Open for first debug
+                                        session</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="field-group-with-help">
+                        <label for="configPreLaunchTask">
+                            Pre-Launch Task
+                            <span
+                                class="help-icon"
+                                onclick="toggleHelp(event, 'preLaunchTask')"
+                            >ⓘ
+                                <div
+                                    class="help-popup"
+                                    id="help-preLaunchTask"
+                                >Task to run before the start of a debug session. Set to the label of a task specified in
+                                tasks.json or use ${defaultBuildTask} for your default build task.</div>
+                            </span>
+                        </label>
+                        <div style="flex: 1;">
+                            <div class="hybrid-input">
+                                <input
+                                    type="text"
+                                    id="configPreLaunchTask"
+                                    name="preLaunchTask"
+                                    placeholder="Enter task name or ${defaultBuildTask}..."
+                                    oninput="clearPreLaunchTaskSelect()"
+                                >
+                                <div class="or-divider">or</div>
+                                <select
+                                    id="configPreLaunchTaskSelect"
+                                    onchange="updatePreLaunchTaskFromSelect()"
+                                    class="enhanced-select"
+                                >
+                                    <option value="">Select preset...</option>
+                                    <option value="${defaultBuildTask}">🔨 Default Build Task</option>
+                                    <option value="npm: build">📦 NPM: Build</option>
+                                    <option value="npm: compile">📝 NPM: Compile</option>
+                                    <option value="npm: test">🧪 NPM: Test</option>
+                                    <option value="gradle: build">🐘 Gradle: Build</option>
+                                    <option value="cargo: build">🦀 Cargo: Build</option>
+                                    <option value="make: all">⚙️ Make: All</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="field-group-with-help">
+                        <label for="configPostDebugTask">
+                            Post-Debug Task
+                            <span
+                                class="help-icon"
+                                onclick="toggleHelp(event, 'postDebugTask')"
+                            >ⓘ
+                                <div
+                                    class="help-popup"
+                                    id="help-postDebugTask"
+                                >Task to run at the very end of a debug session. Set to the label of a task specified in
+                                tasks.json for cleanup or post-processing.</div>
+                            </span>
+                        </label>
+                        <div style="flex: 1;">
+                            <div class="hybrid-input">
+                                <input
+                                    type="text"
+                                    id="configPostDebugTask"
+                                    name="postDebugTask"
+                                    placeholder="Enter task name..."
+                                    oninput="clearPostDebugTaskSelect()"
+                                >
+                                <div class="or-divider">or</div>
+                                <select
+                                    id="configPostDebugTaskSelect"
+                                    onchange="updatePostDebugTaskFromSelect()"
+                                    class="enhanced-select"
+                                >
+                                    <option value="">Select preset...</option>
+                                    <option value="npm: clean">🧹 NPM: Clean</option>
+                                    <option value="npm: lint">🔍 NPM: Lint</option>
+                                    <option value="npm: coverage">📊 NPM: Coverage</option>
+                                    <option value="docker: stop">🐳 Docker: Stop</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div
+                        id="errorMessage"
+                        class="error-message"
+                    ></div>
+                </div>
+            </div>
+
+  
             <div class="section">
                 <div class="section-title">
                     Configuration Properties
@@ -945,7 +1120,11 @@
                 'jsonPreview',
                 'configName',
                 'configType',
-                'configRequest'
+                'configRequest',
+                'configProgram',
+                'configMode',
+                'configArgs',
+                'configArgs-list'
             ];
 
             const missingElements = requiredElements.filter(id => !document.getElementById(id));
@@ -971,6 +1150,44 @@
                 document.getElementById('configName').value = data.config.name || '';
                 document.getElementById('configType').value = data.config.type || '';
                 document.getElementById('configRequest').value = data.config.request || '';
+                document.getElementById('configProgram').value = data.config.program || '';
+                document.getElementById('configMode').value = data.config.mode || '';
+                document.getElementById('configModule').value = data.config.module || '';
+                document.getElementById('configCwd').value = data.config.cwd || '';
+                document.getElementById('configJustMyCode').value = data.config.justMyCode !== undefined ? String(data.config.justMyCode) : '';
+
+                // Set justMyCode dropdown
+                if (['true', 'false'].includes(String(data.config.justMyCode))) {
+                    document.getElementById('configJustMyCodeSelect').value = String(data.config.justMyCode);
+                }
+
+                // Handle args field
+                const argsValue = data.config.args || [];
+                if (Array.isArray(argsValue) && argsValue.length > 0) {
+                    const listValues = argsValue.map(item => String(item)).join('\n');
+                    const shouldUseListMode = argsValue.length > 1 || argsValue.some(item => String(item).length > 30);
+
+                    setTimeout(() => {
+                        const singleInput = document.getElementById('configArgs');
+                        const listInput = document.getElementById('configArgs-list');
+
+                        if (singleInput) {
+                            singleInput.value = JSON.stringify(argsValue);
+                        }
+                        if (listInput) {
+                            listInput.value = listValues;
+                        }
+
+                        if (shouldUseListMode) {
+                            setArrayMode('args', 'list');
+                        }
+                    }, 0);
+                } else {
+                    setTimeout(() => {
+                        document.getElementById('configArgs').value = Array.isArray(argsValue) ? JSON.stringify(argsValue) : '';
+                    }, 0);
+                }
+
                 document.getElementById('configConsole').value = data.config.console || '';
                 document.getElementById('configInternalConsole').value = data.config.internalConsoleOptions || '';
                 document.getElementById('configPreLaunchTask').value = data.config.preLaunchTask || '';
@@ -1100,8 +1317,13 @@
             const container = document.getElementById('propertiesContainer');
             container.innerHTML = '';
 
+            // Skip program, mode, args, module, cwd, and justMyCode fields as they are now in Basic Information
+            const skippedFields = ['program', 'mode', 'args', 'module', 'cwd', 'justMyCode'];
+
             Object.entries(properties).forEach(([key, value]) => {
-                addPropertyField(key, value);
+                if (!skippedFields.includes(key)) {
+                    addPropertyField(key, value);
+                }
             });
         }
 
@@ -1354,6 +1576,20 @@
             document.getElementById('configPostDebugTaskSelect').value = '';
         }
 
+        function updateJustMyCodeFromSelect() {
+            const select = document.getElementById('configJustMyCodeSelect');
+            const input = document.getElementById('configJustMyCode');
+
+            if (select.value) {
+                input.value = select.value;
+            }
+            updateJsonPreview();
+        }
+
+        function clearJustMyCodeSelect() {
+            document.getElementById('configJustMyCodeSelect').value = '';
+        }
+
         function toggleHelp(event, fieldName) {
             event.stopPropagation();
 
@@ -1471,6 +1707,22 @@
             });
         }
 
+        function browseProgram() {
+            const currentValue = document.getElementById('configProgram').value;
+            vscode.postMessage({
+                command: 'browseProgram',
+                currentPath: currentValue || '${workspaceFolder}'
+            });
+        }
+
+        function browseCwd() {
+            const currentValue = document.getElementById('configCwd').value;
+            vscode.postMessage({
+                command: 'browseCwd',
+                currentPath: currentValue || '${workspaceFolder}'
+            });
+        }
+
         function getEnvObject() {
             const env = {};
             const envInputs = document.querySelectorAll('[id^="env-key-"]');
@@ -1514,8 +1766,41 @@
                 const formData = new FormData(form);
                 const config = {};
 
+                // Handle special fields first
+                const configProgram = document.getElementById('configProgram');
+                if (configProgram && configProgram.value.trim()) {
+                    config.program = configProgram.value.trim();
+                }
+
+                const configMode = document.getElementById('configMode');
+                if (configMode && configMode.value.trim()) {
+                    config.mode = configMode.value.trim();
+                }
+
+                const configModule = document.getElementById('configModule');
+                if (configModule && configModule.value.trim()) {
+                    config.module = configModule.value.trim();
+                }
+
+                const configCwd = document.getElementById('configCwd');
+                if (configCwd && configCwd.value.trim()) {
+                    config.cwd = configCwd.value.trim();
+                }
+
+                const configJustMyCode = document.getElementById('configJustMyCode');
+                if (configJustMyCode && configJustMyCode.value.trim()) {
+                    const justMyCodeValue = configJustMyCode.value.trim().toLowerCase();
+                    config.justMyCode = justMyCodeValue === 'true' ? true : justMyCodeValue === 'false' ? false : justMyCodeValue;
+                }
+
+                // Handle args field specially
+                const argsValue = getArrayFieldValue('args');
+                if (argsValue && argsValue.length > 0) {
+                    config.args = argsValue;
+                }
+
                 for (let [key, value] of formData.entries()) {
-                    if (key && !key.startsWith('env-') && !key.endsWith('-list')) {
+                    if (key && !key.startsWith('env-') && !key.endsWith('-list') && !['program', 'mode', 'args', 'module', 'cwd', 'justMyCode'].includes(key)) {
                         const isArrayField = isArrayProperty(key);
 
                         if (isArrayField) {
@@ -1552,6 +1837,50 @@
         }
 
         function getArrayFieldValue(key) {
+            // Handle args field specially since it's not in properties
+            if (key === 'args') {
+                const singleInput = document.getElementById('configArgs');
+                const listInput = document.getElementById('configArgs-list');
+
+                if (!singleInput) return [];
+
+                const isListMode = listInput && listInput.style.display !== 'none';
+
+                if (isListMode && listInput) {
+                    const listValue = listInput.value.trim();
+                    if (!listValue) return [];
+
+                    return listValue.split('\n')
+                        .map(line => line.trim())
+                        .filter(line => line.length > 0)
+                        .map(line => {
+                            try {
+                                return JSON.parse(line);
+                            } catch {
+                                return line;
+                            }
+                        });
+                } else {
+                    const singleValue = singleInput.value.trim();
+                    if (!singleValue) return [];
+
+                    try {
+                        const parsed = JSON.parse(singleValue);
+                        return Array.isArray(parsed) ? parsed : [parsed];
+                    } catch {
+                        return singleValue.split(',').map(item => {
+                            const trimmed = item.trim();
+                            try {
+                                return JSON.parse(trimmed);
+                            } catch {
+                                return trimmed;
+                            }
+                        });
+                    }
+                }
+            }
+
+            // Handle other array fields in properties
             const singleInput = document.getElementById('prop-' + key);
             const listInput = document.getElementById('prop-' + key + '-list');
 
@@ -1711,6 +2040,14 @@
                     break;
                 case 'setEnvFile':
                     document.getElementById('envFile').value = message.path;
+                    updateJsonPreview();
+                    break;
+                case 'setProgram':
+                    document.getElementById('configProgram').value = message.path;
+                    updateJsonPreview();
+                    break;
+                case 'setCwd':
+                    document.getElementById('configCwd').value = message.path;
                     updateJsonPreview();
                     break;
                 case 'showEnvFileError':

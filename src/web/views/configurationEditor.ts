@@ -68,6 +68,9 @@ export class ConfigurationEditor {
                             name: configData.name,
                             type: configData.type,
                             request: configData.request,
+                            program: configData.properties.program,
+                            mode: configData.properties.mode,
+                            args: configData.properties.args,
                             console: configData.properties.console,
                             internalConsoleOptions: configData.properties.internalConsoleOptions,
                             preLaunchTask: configData.properties.preLaunchTask,
@@ -82,6 +85,12 @@ export class ConfigurationEditor {
                                 delete result.internalConsoleOptions;
                                 delete result.preLaunchTask;
                                 delete result.postDebugTask;
+                                delete result.program;
+                                delete result.mode;
+                                delete result.args;
+                                delete result.module;
+                                delete result.cwd;
+                                delete result.justMyCode;
                                 return result;
                             })()
                         },
@@ -235,6 +244,26 @@ export class ConfigurationEditor {
                             panel.webview.postMessage({
                                 command: 'showEnvFileError',
                                 message: `Failed to browse environment file: ${error}`
+                            });
+                        }
+                        break;
+                    case 'browseCwd':
+                        try {
+                            await this.handleCwdBrowse(message.currentPath, panel, provider);
+                        } catch (error) {
+                            panel.webview.postMessage({
+                                command: 'showError',
+                                message: `Failed to browse working directory: ${error}`
+                            });
+                        }
+                        break;
+                    case 'browseProgram':
+                        try {
+                            await this.handleProgramBrowse(message.currentPath, panel, provider);
+                        } catch (error) {
+                            panel.webview.postMessage({
+                                command: 'showError',
+                                message: `Failed to browse program: ${error}`
                             });
                         }
                         break;
@@ -425,6 +454,12 @@ export class ConfigurationEditor {
                                     name: configData.name,
                                     type: configData.type,
                                     request: configData.request,
+                                    program: configData.properties.program,
+                                    mode: configData.properties.mode,
+                                    args: configData.properties.args,
+                                    module: configData.properties.module,
+                                    cwd: configData.properties.cwd,
+                                    justMyCode: configData.properties.justMyCode,
                                     console: configData.properties.console,
                                     internalConsoleOptions: configData.properties.internalConsoleOptions,
                                     preLaunchTask: configData.properties.preLaunchTask,
@@ -439,6 +474,9 @@ export class ConfigurationEditor {
                                         delete result.internalConsoleOptions;
                                         delete result.preLaunchTask;
                                         delete result.postDebugTask;
+                                        delete result.program;
+                                        delete result.mode;
+                                        delete result.args;
                                         return result;
                                     })()
                                 },
@@ -505,6 +543,84 @@ export class ConfigurationEditor {
             'pwa-msedge',
             'node2'
         ];
+    }
+
+    private static async handleProgramBrowse(currentPath: string, panel: vscode.WebviewPanel, provider: DebugConfigurationProvider): Promise<void> {
+        const workspaceFolders = vscode.workspace.workspaceFolders;
+        if (!workspaceFolders) {
+            throw new Error('No workspace folder found');
+        }
+
+        const workspaceRoot = workspaceFolders[0].uri.fsPath;
+
+        // Replace ${workspaceFolder} with actual path
+        const resolvedPath = currentPath.replace('${workspaceFolder}', workspaceRoot);
+
+        try {
+            const fileUri = await vscode.window.showOpenDialog({
+                canSelectFiles: true,
+                canSelectFolders: false,
+                canSelectMany: false,
+                title: 'Select Program File',
+                defaultUri: vscode.Uri.file(resolvedPath)
+            });
+
+            if (fileUri && fileUri[0]) {
+                const selectedPath = fileUri[0].fsPath;
+                // Convert to relative path if possible
+                let relativePath = selectedPath;
+                if (selectedPath.startsWith(workspaceRoot)) {
+                    relativePath = '${workspaceFolder}' + selectedPath.substring(workspaceRoot.length);
+                }
+
+                // Set the path in the webview
+                panel.webview.postMessage({
+                    command: 'setProgram',
+                    path: relativePath
+                });
+            }
+        } catch (error) {
+            throw new Error(`Failed to browse program file: ${error}`);
+        }
+    }
+
+    private static async handleCwdBrowse(currentPath: string, panel: vscode.WebviewPanel, provider: DebugConfigurationProvider): Promise<void> {
+        const workspaceFolders = vscode.workspace.workspaceFolders;
+        if (!workspaceFolders) {
+            throw new Error('No workspace folder found');
+        }
+
+        const workspaceRoot = workspaceFolders[0].uri.fsPath;
+
+        // Replace ${workspaceFolder} with actual path
+        const resolvedPath = currentPath.replace('${workspaceFolder}', workspaceRoot);
+
+        try {
+            const folderUri = await vscode.window.showOpenDialog({
+                canSelectFiles: false,
+                canSelectFolders: true,
+                canSelectMany: false,
+                title: 'Select Working Directory',
+                defaultUri: vscode.Uri.file(resolvedPath)
+            });
+
+            if (folderUri && folderUri[0]) {
+                const selectedPath = folderUri[0].fsPath;
+                // Convert to relative path if possible
+                let relativePath = selectedPath;
+                if (selectedPath.startsWith(workspaceRoot)) {
+                    relativePath = '${workspaceFolder}' + selectedPath.substring(workspaceRoot.length);
+                }
+
+                // Set the path in the webview
+                panel.webview.postMessage({
+                    command: 'setCwd',
+                    path: relativePath
+                });
+            }
+        } catch (error) {
+            throw new Error(`Failed to browse working directory: ${error}`);
+        }
     }
 
     private static async handleEnvFileBrowse(currentPath: string, panel: vscode.WebviewPanel, provider: DebugConfigurationProvider): Promise<void> {
