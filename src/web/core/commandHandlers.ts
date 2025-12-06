@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { ConfigurationGenerator, ConfigurationTarget } from '../config/configurationGenerator';
 import { CommandGenerator, SymbolDetector, SymbolInfo } from '../config/debugCommandGenerator';
-import { FileTypeMapper } from '../util/fileTypeMapper';
+import { languageRegistry } from '../modules/registry';
 import { ConfigurationEditor } from '../views/configurationEditor';
 import { DebugConfigurationItem, DebugConfigurationProvider, DebugErrorItem } from '../views/debugPanel';
 import { LaunchConfiguration } from './types';
@@ -153,7 +153,7 @@ export function registerCommandHandlers(
      * Create debug configuration from command template and open it
      */
     async function createDebugConfigurationAndOpen(commandTemplate: any, symbol: SymbolInfo, debugProvider: DebugConfigurationProvider): Promise<void> {
-        const originalConfig = CommandGenerator.createDebugConfiguration(commandTemplate, symbol);
+        const originalConfig = await CommandGenerator.createDebugConfiguration(commandTemplate, symbol);
 
         try {
             // Check for existing configuration with the same name
@@ -228,7 +228,7 @@ export function registerCommandHandlers(
      * Create debug configuration and immediately run it
      */
     async function createAndRunConfiguration(commandTemplate: any, symbol: SymbolInfo, debugProvider: DebugConfigurationProvider): Promise<void> {
-        let debugConfig = CommandGenerator.createDebugConfiguration(commandTemplate, symbol);
+        let debugConfig = await CommandGenerator.createDebugConfiguration(commandTemplate, symbol);
 
         try {
             // Check for existing configuration with the same name
@@ -301,7 +301,7 @@ export function registerCommandHandlers(
      * Create debug configuration and immediately debug it
      */
     async function createAndDebugConfiguration(commandTemplate: any, symbol: SymbolInfo, debugProvider: DebugConfigurationProvider): Promise<void> {
-        let debugConfig = CommandGenerator.createDebugConfiguration(commandTemplate, symbol);
+        let debugConfig = await CommandGenerator.createDebugConfiguration(commandTemplate, symbol);
 
         try {
             // Check for existing configuration with the same name
@@ -575,6 +575,7 @@ export function registerCommandHandlers(
         }
 
         const currentFile = editor.document.uri.fsPath;
+        const language = editor.document.languageId;
 
         const workspaceFolders = vscode.workspace.workspaceFolders;
         if (!workspaceFolders || workspaceFolders.length === 0) {
@@ -584,35 +585,85 @@ export function registerCommandHandlers(
 
         const workspaceRoot = workspaceFolders[0].uri.fsPath;
 
-        // Check if file type is supported
-        const fileTypeInfo = FileTypeMapper.getFileTypeInfo(currentFile);
-        if (!fileTypeInfo) {
-            const fileExtension = currentFile.split('.').pop()?.toLowerCase();
+        // Check if language is supported by language module system
+        const module = languageRegistry.getModule(language);
+        if (!module) {
+            const supportedLanguages = languageRegistry.getSupportedLanguages();
             vscode.window.showWarningMessage(
-                `File type ".${fileExtension}" is not supported for automatic configuration creation. ` +
-                `Supported types: ${Object.keys(FileTypeMapper.getSupportedFileTypes()).map(ext => `.${ext}`).join(', ')}`
+                `Language "${language}" is not supported for automatic configuration creation. ` +
+                `Supported languages: ${supportedLanguages.join(', ')}`
             );
             return;
         }
 
         // Generate unique configuration name
-        const baseConfigName = FileTypeMapper.generateConfigName(currentFile, workspaceRoot);
-        const configurations = await provider.readConfigurationsOnly();
+        const fileName = currentFile.split(/[\/\\]/).pop() || 'current-file';
+        const baseConfigName = fileName.replace(/\.[^.]*$/, '');
+        let configurations: LaunchConfiguration[] = [];
         let finalConfigName = baseConfigName;
         let counter = 1;
+
+        // Safely get existing configurations
+        try {
+            configurations = await provider.readConfigurationsOnly();
+        } catch (error) {
+            // launch.json doesn't exist, that's fine - we'll create it
+            console.log('No existing launch.json found, creating new one');
+        }
 
         while (configurations.some(config => config.name === finalConfigName)) {
             finalConfigName = `${baseConfigName} - ${counter}`;
             counter++;
         }
 
-        // Create default configuration using the mapper
-        const newConfig = FileTypeMapper.createDefaultConfiguration(currentFile, workspaceRoot, finalConfigName);
+        // Create enhanced configuration using language module with framework detection
+        let symbolInfo: SymbolInfo;
+
+        try {
+            // Try to get the actual symbol at cursor position for better framework detection
+            const detectedSymbol = await SymbolDetector.getSelectedSymbolPath();
+            if (detectedSymbol) {
+                symbolInfo = detectedSymbol;
+            } else {
+                // Fallback to file-level symbol
+                symbolInfo = {
+                    name: baseConfigName,
+                    filePath: currentFile,
+                    language: language,
+                    workspaceRoot: workspaceRoot,
+                    path: [baseConfigName],
+                    kind: vscode.SymbolKind.File  // Treat the file as a symbol
+                };
+            }
+        } catch (error) {
+            console.log('Symbol detection failed, using file-level info:', error);
+            // Fallback to file-level symbol
+            symbolInfo = {
+                name: baseConfigName,
+                filePath: currentFile,
+                language: language,
+                workspaceRoot: workspaceRoot,
+                path: [baseConfigName],
+                kind: vscode.SymbolKind.File
+            };
+        }
+
+        let newConfig: any;
+        try {
+            // Use registry's generateDebugConfig to enable framework detection
+            newConfig = await languageRegistry.generateDebugConfig(symbolInfo);
+        } catch (error) {
+            // Fallback to default config if framework detection fails
+            console.log('Framework detection failed, using default config:', error);
+            newConfig = module.defaultConfig(currentFile, workspaceRoot);
+        }
+
+        newConfig.name = finalConfigName;
 
         try {
             await provider.addConfiguration(newConfig);
             vscode.window.showInformationMessage(
-                `Debug configuration "${finalConfigName}" created for ${fileTypeInfo.displayName} file!`
+                `Debug configuration "${finalConfigName}" created for ${module.displayName} file!`
             );
 
             // Open the configuration editor for the newly created configuration

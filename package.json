@@ -63,7 +63,7 @@
             {
                 "command": "tingly.debug.debugConfig.createFromFile",
                 "title": "Tingly: Debug from Active File",
-                "icon": "$(lightbulb)"
+                "icon": "$(debug)"
             },
             {
                 "command": "tingly.debug.debugConfig.openSettings",
