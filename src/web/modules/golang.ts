@@ -60,11 +60,7 @@ function generateGoDebugConfig(symbol: SymbolInfo): LanguageDebugConfig {
             args: [
                 '-test.run', `^${symbol.name}$`,
                 '-test.v'
-            ],
-            env: {
-                'GOPATH': '${workspaceFolder}',
-                'GO111MODULE': 'on'
-            }
+            ]
         };
     } else if (isGoMainFunction(symbol)) {
         // Main function debug config using file directory
@@ -73,11 +69,7 @@ function generateGoDebugConfig(symbol: SymbolInfo): LanguageDebugConfig {
             type: 'go',
             request: 'launch',
             mode: 'debug',
-            program: fileDirPath,
-            env: {
-                'GOPATH': '${workspaceFolder}',
-                'GO111MODULE': 'on'
-            }
+            program: fileDirPath
         };
     } else {
         // Regular function debug config using file directory
@@ -86,11 +78,7 @@ function generateGoDebugConfig(symbol: SymbolInfo): LanguageDebugConfig {
             type: 'go',
             request: 'launch',
             mode: 'auto',
-            program: fileDirPath,
-            env: {
-                'GOPATH': '${workspaceFolder}',
-                'GO111MODULE': 'on'
-            }
+            program: fileDirPath
         };
     }
 }
@@ -116,11 +104,7 @@ export const golangModule: LanguageModule = {
                     args: isGoTestFunction(symbol)
                         ? ['-run', `^${symbol.name}$`, '-v', fileDirPath]
                         : ['-v', fileDirPath],
-                    cwd: fileDirPath,
-                    env: {
-                        'GOPATH': '${workspaceFolder}',
-                        'GO111MODULE': 'on'
-                    }
+                    cwd: fileDirPath
                 };
             },
             setupInstructions: 'Install Go and Delve debugger for test debugging',
@@ -147,11 +131,7 @@ export const golangModule: LanguageModule = {
                 type: 'go',
                 request: 'launch',
                 mode: 'debug',
-                program: '${file}',
-                env: {
-                    'GOPATH': '${workspaceFolder}',
-                    'GO111MODULE': 'on'
-                }
+                program: '${file}'
             };
         } else if (fileName.endsWith('_test.go')) {
             return {
@@ -160,11 +140,7 @@ export const golangModule: LanguageModule = {
                 request: 'launch',
                 mode: 'test',
                 program: fileDirPath,
-                args: ['-test.v'],
-                env: {
-                    'GOPATH': '${workspaceFolder}',
-                    'GO111MODULE': 'on'
-                }
+                args: ['-test.v']
             };
         } else {
             return {
@@ -172,11 +148,7 @@ export const golangModule: LanguageModule = {
                 type: 'go',
                 request: 'launch',
                 mode: 'auto',
-                program: fileDirPath,
-                env: {
-                    'GOPATH': '${workspaceFolder}',
-                    'GO111MODULE': 'on'
-                }
+                program: fileDirPath
             };
         }
     },
